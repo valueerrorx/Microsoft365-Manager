@@ -1,0 +1,57 @@
+[
+  {
+    "templateId": "62e90394-69f5-4237-9190-012177145e10",
+    "label": "Globaler Administrator",
+    "dangerous": true
+  },
+  {
+    "templateId": "fe930be7-5e62-47db-91af-98c3a49a38b1",
+    "label": "Benutzeradministrator",
+    "dangerous": true
+  },
+  {
+    "templateId": "194ae4cb-b126-40b2-bd5b-6091b380977d",
+    "label": "Sicherheitsadministrator",
+    "dangerous": true
+  },
+  {
+    "templateId": "d2562ede-74db-457e-a7b6-544e236ebb61",
+    "label": "KI-Administrator",
+    "dangerous": true
+  },
+  {
+    "templateId": "729827e3-9c14-49f7-bb1b-9608f156bbb8",
+    "label": "Helpdesk-Administrator",
+    "dangerous": true
+  },
+  {
+    "templateId": "3f04f91a-4ad7-4bd3-bcfa-49882ea1a88a",
+    "label": "Content-Administrator",
+    "dangerous": true
+  },
+  {
+    "templateId": "29232cdf-9323-42fd-ade2-1d097af3e4de",
+    "label": "Exchange-Administrator",
+    "dangerous": false
+  },
+  {
+    "templateId": "f28a1f50-f6e7-4571-818b-6a12f2af6b6c",
+    "label": "SharePoint-Administrator",
+    "dangerous": false
+  },
+  {
+    "templateId": "69091246-20e8-4a56-aa4d-066075b2a7a8",
+    "label": "Teams-Administrator",
+    "dangerous": false
+  },
+  {
+    "templateId": "fdd7a751-b60b-444a-984c-02652fe8fa1c",
+    "label": "Gruppenadministrator",
+    "dangerous": false
+  },
+  {
+    "templateId": "d37c8bed-0711-4417-ba38-b4abe66ce4c2",
+    "label": "Netzwerkadministrator",
+    "dangerous": false
+  }
+]
