@@ -22,17 +22,7 @@ function Ensure-Module {
     Import-Module $Name -Force -ErrorAction Stop
 }
 
-Ensure-Module "Microsoft.Graph.Identity.DirectoryManagement"
-
 $__ms365ConnRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-$__dirRoleHelper = Join-Path $__ms365ConnRoot 'DirectoryRole-Mg365.ps1'
-if (-not (Test-Path -LiteralPath $__dirRoleHelper)) {
-    throw "DirectoryRole-Mg365.ps1 fehlt (erwartet in: $__ms365ConnRoot)"
-}
-. $__dirRoleHelper
-if (-not (Get-Command Get-OrActivateDirectoryRole -ErrorAction SilentlyContinue)) {
-    throw "DirectoryRole-Mg365.ps1 konnte nicht geladen werden"
-}
 . (Join-Path $__ms365ConnRoot 'Connect-Mg365App.ps1')
 Write-Host "Verbinde mit Microsoft Graph..."
 try {
@@ -43,6 +33,15 @@ try {
     Write-Output $result
     Write-Output "###JSON_END###"
     exit 1
+}
+
+$__dirRoleHelper = Join-Path $__ms365ConnRoot 'DirectoryRole-Mg365.ps1'
+if (-not (Test-Path -LiteralPath $__dirRoleHelper)) {
+    throw "DirectoryRole-Mg365.ps1 fehlt (erwartet in: $__ms365ConnRoot)"
+}
+. $__dirRoleHelper
+if (-not (Get-Command Get-OrActivateDirectoryRole -ErrorAction SilentlyContinue)) {
+    throw "DirectoryRole-Mg365.ps1 konnte nicht geladen werden"
 }
 
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
@@ -66,15 +65,19 @@ try {
 
 $rolesOut = New-Object System.Collections.Generic.List[hashtable]
 $hadError = $false
+$roleTotal = @($configEntries).Count
+$roleIndex = 0
+Write-Host "Lade $roleTotal Rollen aus Microsoft Graph..."
 
 foreach ($entry in $configEntries) {
+    $roleIndex++
     $templateId = [string]$entry.templateId
     $label = [string]$entry.label
     $dangerous = $false
     if ($null -ne $entry.dangerous) { $dangerous = [bool]$entry.dangerous }
     if ([string]::IsNullOrWhiteSpace($templateId)) { continue }
 
-    Write-Host "Rolle: $label ($templateId)"
+    Write-Host "Rolle $roleIndex/$roleTotal : $label ($templateId)"
     try {
         $dirRole = Get-OrActivateDirectoryRole -TemplateId $templateId
         $members = Get-DirectoryRoleUserMembers -TemplateId $templateId

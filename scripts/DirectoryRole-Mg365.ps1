@@ -16,12 +16,18 @@ function Get-ActivatedDirectoryRoleByTemplateId {
     }
 }
 
+function New-DirectoryRoleFromTemplate {
+    param([string]$TemplateId)
+    $body = @{ roleTemplateId = $TemplateId } | ConvertTo-Json -Compress
+    return Invoke-MgGraphRequest -Method POST -Uri '/v1.0/directoryRoles' -Body $body -ContentType 'application/json' -ErrorAction Stop
+}
+
 function Get-OrActivateDirectoryRole {
     param([string]$TemplateId)
     $existing = Get-ActivatedDirectoryRoleByTemplateId -TemplateId $TemplateId
     if ($existing) { return $existing }
     Write-Host "Aktiviere Rolle (Template): $TemplateId"
-    return New-MgDirectoryRole -RoleTemplateId $TemplateId -ErrorAction Stop
+    return New-DirectoryRoleFromTemplate -TemplateId $TemplateId
 }
 
 function Get-DirectoryRoleUserMembers {

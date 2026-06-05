@@ -16,7 +16,7 @@
     <div class="device-login-card">
       <h2 class="device-login-title">Microsoft-Anmeldung</h2>
       <p class="device-login-hint">
-        Der Browser sollte sich geöffnet haben. Gib diesen Code auf
+        Nachdem sich der Browser geöffnet hat, geben Sie bitte diesen Code auf
         <strong>microsoft.com/devicelogin</strong> ein:
       </p>
       <div class="device-login-code">{{ authStore.deviceLoginCode }}</div>

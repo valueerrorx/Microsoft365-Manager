@@ -24,13 +24,7 @@ function Ensure-Module {
     Import-Module $Name -Force -ErrorAction Stop
 }
 
-Ensure-Module "Microsoft.Graph.Identity.DirectoryManagement"
-
 $__ms365ConnRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-$__dirRoleHelper = Join-Path $__ms365ConnRoot 'DirectoryRole-Mg365.ps1'
-if (-not (Test-Path -LiteralPath $__dirRoleHelper)) { throw "DirectoryRole-Mg365.ps1 fehlt (erwartet in: $__ms365ConnRoot)" }
-. $__dirRoleHelper
-if (-not (Get-Command Get-ActivatedDirectoryRoleByTemplateId -ErrorAction SilentlyContinue)) { throw "DirectoryRole-Mg365.ps1 konnte nicht geladen werden" }
 . (Join-Path $__ms365ConnRoot 'Connect-Mg365App.ps1')
 Write-Host "Verbinde mit Microsoft Graph..."
 try {
@@ -42,6 +36,11 @@ try {
     Write-Output "###JSON_END###"
     exit 1
 }
+
+$__dirRoleHelper = Join-Path $__ms365ConnRoot 'DirectoryRole-Mg365.ps1'
+if (-not (Test-Path -LiteralPath $__dirRoleHelper)) { throw "DirectoryRole-Mg365.ps1 fehlt (erwartet in: $__ms365ConnRoot)" }
+. $__dirRoleHelper
+if (-not (Get-Command Get-ActivatedDirectoryRoleByTemplateId -ErrorAction SilentlyContinue)) { throw "DirectoryRole-Mg365.ps1 konnte nicht geladen werden" }
 
 $uid = $UserId.Trim()
 $tid = $RoleTemplateId.Trim()

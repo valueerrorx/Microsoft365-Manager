@@ -38,6 +38,7 @@ let deviceLoginBrowserOpened = false
 let deviceLoginCodeEmitted = null
 
 function extractDeviceLoginCode(line) {
+  if (!/enter the code|to authenticate|login\.microsoft\.com\/device/i.test(line)) return null
   const patterns = [
     /enter the code\s+([A-Z0-9]+)\s+to authenticate/i,
     /enter the code\s+([A-Z0-9]+)/i,
@@ -59,7 +60,7 @@ function maybeEmitDeviceLoginCode(line) {
 
 function maybeOpenDeviceLoginBrowser(line) {
   if (deviceLoginBrowserOpened) return
-  if (!/to sign in|devicelogin|enter the code|device-code-anmeldung/i.test(line)) return
+  if (!/to sign in|devicelogin|enter the code|device.code|browser oeffnet|code erscheint/i.test(line)) return
   deviceLoginBrowserOpened = true
   void shell.openExternal('https://microsoft.com/devicelogin')
 }
@@ -79,6 +80,7 @@ function markGraphSessionReady() {
 function onGraphResponse(data) {
   if (data && (data.status === 'ok' || data.status === 'partial')) {
     markGraphSessionReady()
+    resetGraphAuthUiState()
   }
   return data
 }
@@ -88,6 +90,10 @@ const ALLOWED_MS_ADMIN_HOSTS = new Set([
   'admin.microsoft.com',
   'entra.microsoft.com',
   'security.microsoft.com',
+  'learn.microsoft.com',
+  'microsoft.com',
+  'www.microsoft.com',
+  'login.microsoft.com',
   'xapient.solutions',
   'www.xapient.solutions'
 ])
@@ -112,6 +118,7 @@ function createWindow() {
     height: 940,
     minWidth: 1600,
     minHeight: 940,
+    maximized: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       spellcheck: false
@@ -199,27 +206,44 @@ function uiSend(channel, payload) {
 
 const stripAnsi = (t) => t.replace(/\x1b\[[0-9;]*[mGK]/g, '').replace(/\x1b\[[0-9;]*[HJ]/g, '')
 
-function detectPowerShell() {
-  if (process.platform === 'win32') {
-    try { execSync('where.exe pwsh', { stdio: 'ignore' }); return 'pwsh' } catch {}
-    try { execSync('where.exe powershell', { stdio: 'ignore' }); return 'powershell.exe' } catch {}
-    return 'powershell.exe'
-  }
-  try { execSync('which pwsh', { stdio: 'ignore' }); return 'pwsh' } catch {}
-  try { execSync('which powershell', { stdio: 'ignore' }); return 'powershell' } catch {}
-  return 'pwsh'
+function isPwshCommand(cmd) {
+  return /(?:^|[\\/])pwsh(?:\.exe)?$/i.test(String(cmd || '').trim())
 }
 
-/** On Linux/macOS: true if pwsh runs; Windows always returns shouldWarn: false. */
+function detectPowerShell() {
+  const tryCmd = (cmd) => {
+    const r = spawnSync(cmd, ['-NoLogo', '-NoProfile', '-Command', 'exit 0'], {
+      stdio: 'ignore',
+      timeout: 15000,
+      windowsHide: true
+    })
+    return r.status === 0 && !r.error ? cmd : null
+  }
+  if (process.platform === 'win32') {
+    const candidates = [
+      process.env.PWSH_PATH,
+      'pwsh',
+      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'PowerShell', '7', 'pwsh.exe'),
+      path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps', 'pwsh.exe')
+    ].filter(Boolean)
+    for (const cmd of candidates) {
+      const ok = tryCmd(cmd)
+      if (ok) return ok
+    }
+    return tryCmd('powershell.exe') || 'powershell.exe'
+  }
+  return tryCmd('pwsh') || tryCmd('powershell') || 'pwsh'
+}
+
+/** True when pwsh is missing or cannot start (Linux/macOS/Windows). */
 function checkPwshForDashboard() {
-  if (process.platform === 'win32') return { shouldWarn: false }
   const r = spawnSync('pwsh', ['-NoLogo', '-NoProfile', '-Command', 'exit 0'], {
     stdio: 'ignore',
     timeout: 15000,
     windowsHide: true
   })
   const ok = r.status === 0 && !r.error
-  return { shouldWarn: !ok }
+  return { shouldWarn: !ok, usingLegacyPowerShell: process.platform === 'win32' && !ok }
 }
 
 async function resolveScriptsDir(appPath) {
@@ -275,7 +299,8 @@ const PARALLEL_PS_SCRIPTS = new Set([
 let psScriptQueueTail = Promise.resolve()
 
 async function runPsScript(scriptRelPath, args = [], onLog = null) {
-  if (PARALLEL_PS_SCRIPTS.has(scriptRelPath)) {
+  const allowParallel = process.platform !== 'win32' && PARALLEL_PS_SCRIPTS.has(scriptRelPath)
+  if (allowParallel) {
     return runPsScriptBody(scriptRelPath, args, onLog)
   }
   const prev = psScriptQueueTail
@@ -292,6 +317,8 @@ async function runPsScript(scriptRelPath, args = [], onLog = null) {
 }
 
 async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
+  deviceLoginBrowserOpened = false
+  deviceLoginCodeEmitted = null
   let tmpScript = null
   try {
     tmpScript = await getScriptPath(scriptRelPath)
@@ -300,6 +327,14 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
   }
 
   const psCmd = detectPowerShell()
+  if (onLog && !isPwshCommand(psCmd)) {
+    onLog({
+      type: 'warning',
+      message: process.platform === 'win32'
+        ? 'Hinweis: PowerShell 7 (pwsh) nicht gefunden — Windows PowerShell 5.1 kann bei Graph deutlich langsamer sein. Empfehlung: winget install Microsoft.PowerShell'
+        : 'Hinweis: pwsh nicht im PATH — Graph-Aktionen sind möglicherweise eingeschränkt.'
+    })
+  }
   const env = {
     ...process.env,
     POWERSHELL_UPDATECHECK: 'Off',
@@ -308,6 +343,18 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
   }
 
   const PS_TIMEOUT_MS = 5 * 60 * 1000
+  const psCwd = path.dirname(tmpScript)
+  const verCmd = `Write-Host "PowerShell $($PSVersionTable.PSVersion) ($($PSEdition)) exe='${String(psCmd).replace(/'/g, "''")}'"`
+  const verRun = spawnSync(psCmd, ['-NoLogo', '-NoProfile', '-Command', verCmd], {
+    encoding: 'utf8',
+    cwd: psCwd,
+    env,
+    windowsHide: true
+  })
+  if (onLog) {
+    const verLine = stripAnsi((verRun.stdout || '').trim())
+    if (verLine) onLog({ type: 'info', message: verLine })
+  }
 
   return new Promise((resolve) => {
     let stdout = ''
@@ -317,8 +364,12 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
     const ps = spawn(
       psCmd,
       ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tmpScript, ...args],
-      { cwd: path.dirname(tmpScript), env, stdio: ['ignore', 'pipe', 'pipe'] }
+      { cwd: psCwd, env, stdio: ['ignore', 'pipe', 'pipe'] }
     )
+    ps.stdout?.setEncoding('utf8')
+    ps.stderr?.setEncoding('utf8')
+    ps.stdout?.resume()
+    ps.stderr?.resume()
 
     const timer = setTimeout(() => {
       timedOut = true
@@ -329,6 +380,7 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
       if (settled) return
       settled = true
       clearTimeout(timer)
+      if (timedOut || payload.exitCode !== 0) deviceLoginBrowserOpened = false
       try {
         if (tmpScript) await fs.rm(path.dirname(tmpScript), { recursive: true, force: true })
       } catch {}
@@ -343,6 +395,7 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
         if (!clean || clean.includes('###JSON_')) continue
         maybeOpenDeviceLoginBrowser(clean)
         maybeEmitDeviceLoginCode(clean)
+        if (/Anmeldung erfolgreich/i.test(clean)) resetGraphAuthUiState()
         if (onLog) onLog({ type: 'info', message: clean })
       }
     })
@@ -355,7 +408,9 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
         if (!clean) continue
         maybeOpenDeviceLoginBrowser(clean)
         maybeEmitDeviceLoginCode(clean)
-        if (onLog) onLog({ type: 'error', message: clean })
+        if (/Anmeldung erfolgreich/i.test(clean)) resetGraphAuthUiState()
+        const isDeviceLoginHint = /to sign in|enter the code|devicelogin|device.code/i.test(clean)
+        if (onLog) onLog({ type: isDeviceLoginHint ? 'info' : 'error', message: clean })
       }
     })
 

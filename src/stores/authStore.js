@@ -38,10 +38,17 @@ export const useAuthStore = defineStore('auth', {
     },
 
     beginGraphOperation(resourceLabel) {
-      const message = this.connected
-        ? `Lade ${resourceLabel} (Microsoft Graph)…`
-        : 'Verbinde mit Microsoft Graph…'
-      this.addLog({ type: 'info', message })
+      if (this.connected) {
+        this.addLog({ type: 'info', message: `Lade ${resourceLabel} (Microsoft Graph)…` })
+        return
+      }
+      if (this.connecting) return
+      this.connecting = true
+      this.addLog({ type: 'info', message: 'Verbinde mit Microsoft Graph…' })
+      this.addLog({
+        type: 'info',
+        message: 'Erstanmeldung: Module laden, dann Anmeldecode im Popup (kann 1–2 Min. dauern).'
+      })
     },
 
     markGraphConnected(domain) {
@@ -50,6 +57,7 @@ export const useAuthStore = defineStore('auth', {
 
     setConnected(domain) {
       this.connected = true
+      this.connecting = false
       this.tenantDomain = domain
       this.error = null
       this.deviceLoginCode = null
@@ -57,6 +65,7 @@ export const useAuthStore = defineStore('auth', {
 
     setDisconnected() {
       this.connected = false
+      this.connecting = false
       this.tenantDomain = null
       this.deviceLoginCode = null
     },

@@ -9,15 +9,16 @@
       <p class="page-subtitle">Übersicht über Microsoft 365 Benutzer, Gruppen, Geräte und Lizenzen</p>
     </div>
 
-    <!-- PowerShell Core missing (Linux/macOS) -->
+    <!-- PowerShell Core missing -->
     <div v-if="pwshWarning" class="p-3 rounded mb-4 d-flex align-items-start gap-3" style="background:rgba(210,153,34,0.12);border:1px solid rgba(210,153,34,0.35);color:#e6edf3;" role="alert">
       <i class="bi bi-exclamation-triangle-fill fs-5 mt-1" style="flex-shrink:0;color:#d29922;"></i>
       <div>
-        <strong style="color:#d29922;">PowerShell Core (<code class="text-light">pwsh</code>) nicht gefunden</strong>
+        <strong style="color:#d29922;">PowerShell 7 (<code class="text-light">pwsh</code>) nicht gefunden</strong>
         <p class="mb-0 mt-1" style="font-size:0.85rem;color:#8b949e;">
-          Auf Linux und macOS muss PowerShell installiert und im <code class="text-secondary">PATH</code> sein (z.&nbsp;B. Paketmanager oder
-          <a href="https://learn.microsoft.com/powershell/scripting/install/installing-powershell" target="_blank" rel="noopener noreferrer" class="link-light">Microsoft-Dokumentation</a>).
-          Ohne <code class="text-secondary">pwsh</code> funktionieren MS365-Aktionen nicht.
+          Unter Linux/macOS und Windows wird <code class="text-secondary">pwsh</code> empfohlen (Microsoft Graph ist damit deutlich schneller und stabiler).
+          Windows-Fallback: <code class="text-secondary">powershell.exe</code> 5.1 — Installation z.&nbsp;B.
+          <code class="text-secondary">winget install Microsoft.PowerShell</code> oder
+          <button type="button" class="dashboard-doc-link" @click="openMsPortal(pwshDocsUrl)">Microsoft-Dokumentation</button>.
         </p>
       </div>
     </div>
@@ -262,6 +263,7 @@ const msAdminPortals = [
   { url: 'https://security.microsoft.com/', title: 'Microsoft 365 Defender', subtitle: 'Security & Bedrohungsschutz', icon: 'bi-shield-check', accent: '#f778ba' }
 ]
 
+const pwshDocsUrl = 'https://learn.microsoft.com/powershell/scripting/install/installing-powershell'
 const defaultLicenseCount = 6
 const showAllLicenses = ref(false)
 const pwshWarning = ref(false)
@@ -352,5 +354,20 @@ function licenseBarColor(sku) {
 
 .btn-quick-portal:hover {
   filter: brightness(1.06);
+}
+
+.dashboard-doc-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #79b8ff;
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dashboard-doc-link:hover {
+  color: #a8d4ff;
 }
 </style>
