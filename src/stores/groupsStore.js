@@ -33,11 +33,12 @@ export const useGroupsStore = defineStore('groups', {
       const auth = useAuthStore()
       this.loading = true
       this.error = null
-      auth.addLog({ type: 'info', message: 'Lade Gruppen (Detail, kann bei vielen Gruppen dauern)...' })
+      auth.beginGraphOperation('Gruppen')
       groupsDetailInflight = (async () => {
         try {
           const result = await window.ipcRenderer.invoke('get-groups-detail')
           if (result.status === 'ok') {
+            auth.markGraphConnected()
             this.groups = result.groups || []
             this.lastFetched = new Date()
             auth.addLog({ type: 'success', message: `${this.groups.length} Gruppen geladen` })

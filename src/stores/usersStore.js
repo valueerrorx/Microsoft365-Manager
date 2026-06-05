@@ -62,7 +62,7 @@ export const useUsersStore = defineStore('users', {
       const auth = useAuthStore()
       this.loading = true
       this.error = null
-      auth.addLog({ type: 'info', message: 'Lade Benutzerliste von Microsoft 365...' })
+      auth.beginGraphOperation('Benutzerliste')
       try {
         const result = await window.ipcRenderer.invoke('get-users')
         if (result.status === 'ok') {

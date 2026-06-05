@@ -33,11 +33,12 @@ export const useDevicesStore = defineStore('devices', {
       const auth = useAuthStore()
       this.loading = true
       this.error = null
-      auth.addLog({ type: 'info', message: 'Lade Geräte (Microsoft Graph)…' })
+      auth.beginGraphOperation('Geräte')
       devicesInflight = (async () => {
         try {
           const result = await window.ipcRenderer.invoke('get-devices')
           if (result.status === 'ok') {
+            auth.markGraphConnected()
             this.devices = result.devices || []
             this.lastFetched = new Date()
             auth.addLog({ type: 'success', message: `${this.devices.length} Geräte geladen` })

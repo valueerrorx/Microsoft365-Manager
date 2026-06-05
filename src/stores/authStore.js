@@ -37,6 +37,17 @@ export const useAuthStore = defineStore('auth', {
       }, duration)
     },
 
+    beginGraphOperation(resourceLabel) {
+      const message = this.connected
+        ? `Lade ${resourceLabel} (Microsoft Graph)…`
+        : 'Verbinde mit Microsoft Graph…'
+      this.addLog({ type: 'info', message })
+    },
+
+    markGraphConnected(domain) {
+      if (!this.connected) this.setConnected(domain || 'Microsoft 365')
+    },
+
     setConnected(domain) {
       this.connected = true
       this.tenantDomain = domain

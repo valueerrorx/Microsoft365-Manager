@@ -246,7 +246,11 @@ async function getScriptPath(scriptRelPath) {
   let mainCopied = false
   for (const name of names) {
     if (!name.endsWith('.ps1')) continue
-    await fs.copyFile(path.join(scriptsDir, name), path.join(workDir, name))
+    const srcPath = path.join(scriptsDir, name)
+    const destPath = path.join(workDir, name)
+    const content = await fs.readFile(srcPath, 'utf8')
+    const withBom = content.charCodeAt(0) === 0xfeff ? content : `\uFEFF${content}`
+    await fs.writeFile(destPath, withBom, 'utf8')
     if (name === mainName) mainCopied = true
   }
   if (!mainCopied) {

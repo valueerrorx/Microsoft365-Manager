@@ -113,11 +113,12 @@ export const useRolesStore = defineStore('roles', {
       const auth = useAuthStore()
       this.loading = true
       this.error = null
-      auth.addLog({ type: 'info', message: 'Lade Administratorenrollen (Microsoft Graph)…' })
+      auth.beginGraphOperation('Administratorenrollen')
       rolesInflight = (async () => {
         try {
           const result = await window.ipcRenderer.invoke('get-managed-directory-roles')
           if (result.status === 'ok' || result.status === 'partial') {
+            auth.markGraphConnected()
             this.roles = result.roles || []
             this.lastFetched = new Date()
             const msg =

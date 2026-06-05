@@ -29,14 +29,21 @@
 
     <div v-if="rolesStore.loading" class="text-center py-5">
       <div class="spinner-border" style="color:#58a6ff;" role="status"></div>
-      <div style="color:#8b949e;margin-top:1rem;font-size:0.875rem;">Rollen werden geladen…</div>
+      <div style="color:#8b949e;margin-top:1rem;font-size:0.875rem;">
+        {{ authStore.connected ? 'Rollen werden geladen…' : 'Verbinde mit Microsoft Graph…' }}
+      </div>
     </div>
 
     <div v-else-if="!rolesStore.roles.length" class="text-center py-5">
       <i class="bi bi-shield-lock" style="font-size:3rem;color:#30363d;"></i>
-      <div style="color:#8b949e;margin-top:1rem;">Noch keine Rollen geladen</div>
+      <div style="color:#8b949e;margin-top:1rem;">
+        {{ authStore.connected ? 'Noch keine Rollen geladen' : 'Nicht mit Microsoft Graph verbunden' }}
+      </div>
+      <p v-if="!authStore.connected" class="mt-2 mb-0" style="font-size:0.85rem;color:#8b949e;">
+        Beim ersten Start öffnet sich ein Browser-Fenster oder ein Anmeldecode erscheint.
+      </p>
       <button class="btn btn-primary btn-sm mt-3" @click="rolesStore.fetchManagedRoles()">
-        <i class="bi bi-plug me-1"></i> Rollen laden
+        <i class="bi bi-plug me-1"></i> {{ authStore.connected ? 'Rollen laden' : 'Verbinden &amp; laden' }}
       </button>
     </div>
 
@@ -290,6 +297,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useAuthStore } from '../stores/authStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import managedDirectoryRoles from '../../config/managed-directory-roles.json'
@@ -298,6 +306,7 @@ const roleSortIndex = new Map(
   managedDirectoryRoles.map((entry, index) => [entry.templateId, index])
 )
 
+const authStore = useAuthStore()
 const rolesStore = useRolesStore()
 const { scheduledExpirations } = storeToRefs(rolesStore)
 const usersStore = useUsersStore()

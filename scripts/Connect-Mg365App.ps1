@@ -30,7 +30,7 @@ function Connect-Mg365App {
     )
     $useDeviceCode = $env:MS365_ELECTRON_APP -eq '1'
     if ($useDeviceCode) {
-        Write-Host "Device-Code-Anmeldung — Browser öffnet sich automatisch..." -ForegroundColor Yellow
+        Write-Host "Device-Code-Anmeldung - Browser oeffnet sich automatisch..." -ForegroundColor Yellow
         Write-Host "Code steht unten im Ausgabefenster; auf der Seite eingeben und anmelden." -ForegroundColor Yellow
         Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ErrorAction Stop
         return
@@ -41,7 +41,7 @@ function Connect-Mg365App {
     } catch {
         $msg = [string]$_.Exception.Message
         if ($msg -match 'InteractiveBrowserCredential|Interactive browser credential|window handle must be configured') {
-            Write-Host "Hinweis: Browser-Login nicht möglich. Fallback: Device-Code-Login..." -ForegroundColor Yellow
+            Write-Host "Hinweis: Browser-Login nicht moeglich. Fallback: Device-Code-Login..." -ForegroundColor Yellow
             Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ErrorAction Stop
             return
         }
