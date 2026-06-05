@@ -33,6 +33,9 @@ function Connect-Mg365App {
         Write-Host "Device-Code-Anmeldung - Browser oeffnet sich automatisch..." -ForegroundColor Yellow
         Write-Host "Code steht unten im Ausgabefenster; auf der Seite eingeben und anmelden." -ForegroundColor Yellow
         Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ErrorAction Stop
+        Write-Host "DIAG: Connect-MgGraph zurueckgekehrt - schreibe Token-Cache..."
+        $null = Get-MgContext
+        Write-Host "DIAG: Get-MgContext OK - Anmeldung abgeschlossen."
         return
     }
     try {

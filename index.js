@@ -358,8 +358,11 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
     const ps = spawn(
       psCmd,
       ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tmpScript, ...args],
-      { cwd: psCwd, env, stdio: ['ignore', 'pipe', 'pipe'] }
+      // stdin als geschlossene Pipe (nicht 'ignore'): MSAL Device-Flow auf Windows
+      // kann beim Abschluss sonst auf einen stdin-Handle warten und haengen.
+      { cwd: psCwd, env, stdio: ['pipe', 'pipe', 'pipe'] }
     )
+    try { ps.stdin?.end() } catch {}
     ps.stdout?.setEncoding('utf8')
     ps.stderr?.setEncoding('utf8')
     ps.stdout?.resume()
@@ -697,6 +700,21 @@ ipcMain.handle('run-password-update', async () => {
 })
 
 // ===================== IPC: User Management =====================
+
+// Stiller Status-Check beim App-Start: erkennt vorhandene Anmeldung ohne Device-Code
+ipcMain.handle('graph-connection-status', async () => {
+  try {
+    const result = await runPsScript('scripts/check-graph-connection.ps1', [])
+    const data = parseJsonFromOutput(result.stdout)
+    if (data?.status === 'ok') {
+      markGraphSessionReady()
+      return data
+    }
+    return { status: 'error' }
+  } catch {
+    return { status: 'error' }
+  }
+})
 
 // Stellt einmalig die Graph-Verbindung her (1 Device-Code), bevor parallele Reads laufen
 ipcMain.handle('ensure-graph-connected', async () => {

@@ -73,7 +73,13 @@ async function copyDeviceCode() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Beim Start pruefen, ob bereits ein gueltiges Token vorhanden ist (kein Device-Code).
+  try {
+    const status = await window.ipcRenderer.invoke('graph-connection-status')
+    if (status?.status === 'ok') authStore.setConnected(status.tenantDomain || 'Microsoft 365')
+  } catch { /* ignorieren: dann normaler Login-Flow */ }
+
   window.ipcRenderer.on('device-login-code', (_e, data) => {
     authStore.setDeviceLoginCode(data?.code ?? null)
   })
