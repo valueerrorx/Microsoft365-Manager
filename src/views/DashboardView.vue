@@ -298,12 +298,14 @@ const dashboardGroupsLifecycleDisplay = computed(() => {
 
 async function refreshDashboardData() {
   if (dashboardRefreshing.value) return
-  await usersStore.fetchUsers()
-  await groupsStore.fetchGroupsDetail()
-  await groupsStore.fetchLifecyclePolicies()
+  await Promise.all([
+    usersStore.fetchUsers(),
+    groupsStore.fetchGroupsDetail(),
+    groupsStore.fetchLifecyclePolicies(),
+    devicesStore.fetchDevices(),
+    rolesStore.fetchManagedRoles()
+  ])
   groupsStore.refreshLifecyclePolicyGroupCount()
-  await devicesStore.fetchDevices()
-  await rolesStore.fetchManagedRoles()
 }
 
 function portalRowStyle(p) {

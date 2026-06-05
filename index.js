@@ -16,8 +16,18 @@ function getAppRoot() {
   return app.isPackaged ? app.getAppPath() : __dirname
 }
 
-function getManagedRolesConfigPath() {
-  return path.join(getAppRoot(), 'config', 'managed-directory-roles.json')
+let managedRolesConfigCachePath = null
+
+async function resolveManagedRolesConfigPath() {
+  if (!app.isPackaged) {
+    return path.join(__dirname, 'config', 'managed-directory-roles.json')
+  }
+  if (managedRolesConfigCachePath) return managedRolesConfigCachePath
+  const bundled = path.join(getAppRoot(), 'config', 'managed-directory-roles.json')
+  const dest = path.join(os.tmpdir(), 'ms365-managed-directory-roles.json')
+  await fs.copyFile(bundled, dest)
+  managedRolesConfigCachePath = dest
+  return dest
 }
 
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
@@ -211,10 +221,24 @@ async function getScriptPath(scriptRelPath) {
   return path.join(workDir, mainName)
 }
 
-// Serialize Graph PowerShell runs so concurrent Connect-MgGraph does not race MSAL token cache (duplicate browser prompts).
+// Bulk/read Graph scripts may run in parallel; writes stay serialized (MSAL token cache / login prompts).
+const PARALLEL_PS_SCRIPTS = new Set([
+  'scripts/get-ms365-users.ps1',
+  'scripts/get-groups-detail.ps1',
+  'scripts/get-devices.ps1',
+  'scripts/get-managed-directory-roles.ps1',
+  'scripts/get-groups.ps1',
+  'scripts/get-group-owners.ps1',
+  'scripts/get-group-members.ps1',
+  'scripts/group-lifecycle.ps1'
+])
+
 let psScriptQueueTail = Promise.resolve()
 
 async function runPsScript(scriptRelPath, args = [], onLog = null) {
+  if (PARALLEL_PS_SCRIPTS.has(scriptRelPath)) {
+    return runPsScriptBody(scriptRelPath, args, onLog)
+  }
   const prev = psScriptQueueTail
   let release
   psScriptQueueTail = new Promise((r) => {
@@ -240,7 +264,8 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
   const env = {
     ...process.env,
     POWERSHELL_UPDATECHECK: 'Off',
-    POWERSHELL_TELEMETRY_OPTOUT: '1'
+    POWERSHELL_TELEMETRY_OPTOUT: '1',
+    MS365_ELECTRON_APP: '1'
   }
 
   const PS_TIMEOUT_MS = 5 * 60 * 1000
@@ -717,7 +742,7 @@ ipcMain.handle('cancel-scheduled-directory-role', async (_event, { roleTemplateI
 
 ipcMain.handle('get-managed-directory-roles', async () => {
   try {
-    const configPath = getManagedRolesConfigPath()
+    const configPath = await resolveManagedRolesConfigPath()
     const result = await runPsScript('scripts/get-managed-directory-roles.ps1', ['-ConfigPath', configPath], (log) => {
       uiSend('ps-operation-log', log)
     })

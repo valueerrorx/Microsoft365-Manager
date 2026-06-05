@@ -659,7 +659,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import PasswordInput from '../components/PasswordInput.vue'
@@ -1171,6 +1171,10 @@ async function doDeleteUser() {
   if (ok) deleteModal.show = false
   else deleteModal.error = 'Benutzer konnte nicht gelöscht werden. Prüfe das Ausgabefenster.'
 }
+
+onMounted(() => {
+  if (!usersStore.lastFetched) usersStore.fetchUsers()
+})
 </script>
 
 <style scoped>

@@ -1,6 +1,6 @@
 {
   "name": "microsoft365-users",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "MS-365 User Management Dashboard",
   "main": "index.js",
   "type": "module",
@@ -9,7 +9,9 @@
     "dev:vite": "vite",
     "dev:electron": "cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
     "build:renderer": "vite build",
-    "build": "npm run build:renderer && electron-builder --publish never"
+    "build": "npm run build:renderer && electron-builder --publish never",
+    "build:test": "npm run build:renderer && electron-builder --linux dir --publish never",
+    "build:linux": "npm run build:renderer && electron-builder --linux --publish never"
   },
   "author": "Thomas Michael Weissel <valueerror@gmail.com>",
   "license": "GPL-3.0-or-later",
@@ -18,6 +20,7 @@
     "productName": "Microsoft365Users",
     "icon": "icon.png",
     "publish": null,
+    "compression": "store",
     "files": [
       "dist/**/*",
       "index.js",

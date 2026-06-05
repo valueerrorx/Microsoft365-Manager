@@ -28,14 +28,21 @@ function Connect-Mg365App {
         'UserAuthenticationMethod.ReadWrite.All',
         'RoleManagement.ReadWrite.Directory'
     )
+    $useDeviceCode = $env:MS365_ELECTRON_APP -eq '1'
+    if ($useDeviceCode) {
+        Write-Host "Device-Code-Anmeldung (Electron hat kein Browser-Fenster-Handle)..." -ForegroundColor Yellow
+        Write-Host "Code und Link erscheinen unten im Ausgabefenster; ggf. https://microsoft.com/devicelogin" -ForegroundColor Yellow
+        Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ErrorAction Stop
+        return
+    }
     try {
         Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop
         return
     } catch {
         $msg = [string]$_.Exception.Message
-        if ($msg -match 'Interactive browser credential authentication failed') {
-            Write-Host "Hinweis: Browser-Login nicht möglich (headless). Fallback: Device-Code-Login..." -ForegroundColor Yellow
-            Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ContextScope Process -ErrorAction Stop
+        if ($msg -match 'InteractiveBrowserCredential|Interactive browser credential|window handle must be configured') {
+            Write-Host "Hinweis: Browser-Login nicht möglich. Fallback: Device-Code-Login..." -ForegroundColor Yellow
+            Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ErrorAction Stop
             return
         }
         throw
