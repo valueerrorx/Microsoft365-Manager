@@ -12,7 +12,8 @@ export const useAuthStore = defineStore('auth', {
     loggingOut: false,
     error: null,
     logs: [],
-    toasts: []
+    toasts: [],
+    deviceLoginCode: null
   }),
 
   actions: {
@@ -47,17 +48,23 @@ export const useAuthStore = defineStore('auth', {
       if (!this.connected) this.setConnected(domain || 'Microsoft 365')
     },
 
+    setDeviceLoginCode(code) {
+      this.deviceLoginCode = code ? String(code) : null
+    },
+
     setConnected(domain) {
       this.connected = true
       this.connecting = false
       this.tenantDomain = domain
       this.error = null
+      this.deviceLoginCode = null
     },
 
     setDisconnected() {
       this.connected = false
       this.connecting = false
       this.tenantDomain = null
+      this.deviceLoginCode = null
     },
 
     async clearLocalSession() {

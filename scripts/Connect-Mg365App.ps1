@@ -28,5 +28,20 @@ function Connect-Mg365App {
         'UserAuthenticationMethod.ReadWrite.All',
         'RoleManagement.ReadWrite.Directory'
     )
+    $useDeviceCode = $env:MS365_ELECTRON_APP -eq '1'
+    if ($useDeviceCode) {
+        try {
+            Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop | Out-Null
+            if ((Get-MgContext)) {
+                Write-Host "Bestehende Anmeldung wiederverwendet."
+                return
+            }
+        } catch {}
+        Write-Host "Device-Code-Anmeldung - Browser oeffnet sich automatisch..." -ForegroundColor Yellow
+        Write-Host "Code steht unten im Ausgabefenster; auf der Seite eingeben und anmelden." -ForegroundColor Yellow
+        Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ErrorAction Stop
+        Write-Host "Anmeldung erfolgreich."
+        return
+    }
     Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop
 }
