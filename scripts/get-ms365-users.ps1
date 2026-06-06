@@ -23,6 +23,19 @@ function Ensure-Module {
 Ensure-Module "Microsoft.Graph.Users"
 Ensure-Module "Microsoft.Graph.Identity.DirectoryManagement"
 
+# Pick the best cached sign-in timestamp from the user object's signInActivity block.
+function Get-LastActivityFromSignInActivity {
+    param($Sa)
+    if (-not $Sa) { return $null }
+    if ($Sa.LastSuccessfulSignInDateTime) { return $Sa.LastSuccessfulSignInDateTime }
+    $fallbacks = @(
+        $Sa.LastNonInteractiveSignInDateTime
+        $Sa.LastSignInDateTime
+    ) | Where-Object { $_ }
+    if (-not $fallbacks.Count) { return $null }
+    return $fallbacks | Sort-Object -Descending | Select-Object -First 1
+}
+
 $__ms365ConnRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 . (Join-Path $__ms365ConnRoot 'Connect-Mg365App.ps1')
 Write-Host "Verbinde mit Microsoft Graph..."
@@ -84,16 +97,7 @@ try {
     $users = Get-MgUser -All -Property $selectFields -ErrorAction Stop
 
     foreach ($user in $users) {
-        $lastActivity = $null
-        if ($user.SignInActivity) {
-            $activityDates = @(
-                $user.SignInActivity.LastSignInDateTime
-                $user.SignInActivity.LastNonInteractiveSignInDateTime
-            ) | Where-Object { $_ }
-            if ($activityDates.Count) {
-                $lastActivity = $activityDates | Sort-Object -Descending | Select-Object -First 1
-            }
-        }
+        $lastActivity = Get-LastActivityFromSignInActivity -Sa $user.SignInActivity
         $assignedLics = @()
         if ($user.AssignedLicenses) {
             foreach ($lic in $user.AssignedLicenses) {
