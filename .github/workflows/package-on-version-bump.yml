@@ -172,7 +172,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="v${{ needs.check-version.outputs.version }}"
-          NAME="Microsoft365Users ${{ needs.check-version.outputs.version }}"
+          NAME="Microsoft 365 Manager ${{ needs.check-version.outputs.version }}"
           echo "Creating release ${TAG}"
           mapfile -t ASSET_FILES < <(find release-assets -maxdepth 1 -type f | sort)
           if [ "${#ASSET_FILES[@]}" -eq 0 ]; then
