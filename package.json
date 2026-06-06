@@ -1,6 +1,6 @@
 {
   "name": "microsoft365-manager",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "MS-365 User Management Dashboard",
   "main": "index.js",
   "type": "module",
@@ -44,7 +44,9 @@
       "maintainer": "Thomas Michael Weissel <valueerror@gmail.com>",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "desktop": {
-        "StartupWMClass": "microsoft365-manager"
+        "entry": {
+          "StartupWMClass": "microsoft365-manager"
+        }
       }
     },
     "win": {
@@ -63,8 +65,7 @@
         }
       ],
       "icon": "icon.png",
-      "artifactName": "${productName}-${version}-portable-${arch}.${ext}",
-      "publisherName": "Thomas Michael Weissel <valueerror@gmail.com>"
+      "artifactName": "${productName}-${version}-portable-${arch}.${ext}"
     },
     "portable": {
       "useZip": true
