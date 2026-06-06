@@ -23,6 +23,7 @@
     "files": [
       "dist/**/*",
       "index.js",
+      "graph-device-auth.mjs",
       "scheduled-directory-roles.mjs",
       "preload.js",
       "scripts/**/*",
@@ -111,6 +112,7 @@
     "wait-on": "^7.0.0"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.1",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.11.3",
     "pinia": "^2.1.7",

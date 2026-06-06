@@ -36,6 +36,22 @@ function Connect-Mg365App {
         'UserAuthenticationMethod.ReadWrite.All',
         'RoleManagement.ReadWrite.Directory'
     )
+    if ($env:MS365_GRAPH_ACCESS_TOKEN) {
+        Write-Mg365AuthLog "Connect-MgGraph -AccessToken (Electron Device-Code)"
+        try {
+            $secureToken = ConvertTo-SecureString -String $env:MS365_GRAPH_ACCESS_TOKEN -AsPlainText -Force
+            Connect-MgGraph -AccessToken $secureToken -NoWelcome -ErrorAction Stop
+            $ctxToken = Get-MgContext
+            if ($ctxToken) {
+                Write-Mg365AuthLog "Connect OK account=$($ctxToken.Account) tenant=$($ctxToken.TenantId) scopes=$($ctxToken.Scopes -join ',')"
+            }
+            Write-Host "Anmeldung erfolgreich."
+        } catch {
+            Write-Mg365AuthLog "Connect FEHLER: $($_.Exception.Message)"
+            throw
+        }
+        return
+    }
     $useDeviceCode = $env:MS365_ELECTRON_APP -eq '1'
     Write-Mg365AuthLog "useDeviceCode=$useDeviceCode scopeCount=$($scopes.Count)"
     if ($useDeviceCode) {
