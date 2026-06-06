@@ -116,16 +116,6 @@ export const useRolesStore = defineStore('roles', {
       auth.beginGraphOperation('Administratorenrollen')
       rolesInflight = (async () => {
         try {
-          if (!auth.connected) {
-            const conn = await window.ipcRenderer.invoke('ensure-graph-connected')
-            if (conn?.status !== 'ok' && conn?.status !== 'partial') {
-              this.error = conn?.message || 'Verbindung zu Microsoft Graph fehlgeschlagen.'
-              auth.addLog({ type: 'error', message: this.error })
-              auth.showToast(this.error, 'error')
-              return
-            }
-            auth.markGraphConnected(conn.tenantDomain)
-          }
           const result = await window.ipcRenderer.invoke('get-managed-directory-roles')
           if (result.status === 'ok' || result.status === 'partial') {
             auth.markGraphConnected()

@@ -80,6 +80,7 @@ onMounted(async () => {
   } catch { /* ignorieren: dann normaler Login-Flow */ }
 
   window.ipcRenderer.on('device-login-code', (_e, data) => {
+    console.log('[ms365-auth renderer] device-login-code', data)
     authStore.setDeviceLoginCode(data?.code ?? null)
   })
   window.ipcRenderer.on('ps-operation-log', (_e, log) => {
