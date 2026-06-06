@@ -80,10 +80,20 @@ try {
 Write-Host "Lade Benutzerliste..."
 $usersData = @()
 try {
-    $selectFields = "id,userPrincipalName,displayName,givenName,surname,department,jobTitle,accountEnabled,usageLocation,assignedLicenses,mail,mobilePhone,createdDateTime"
+    $selectFields = "id,userPrincipalName,displayName,givenName,surname,department,jobTitle,accountEnabled,usageLocation,assignedLicenses,mail,mobilePhone,createdDateTime,signInActivity"
     $users = Get-MgUser -All -Property $selectFields -ErrorAction Stop
 
     foreach ($user in $users) {
+        $lastActivity = $null
+        if ($user.SignInActivity) {
+            $activityDates = @(
+                $user.SignInActivity.LastSignInDateTime
+                $user.SignInActivity.LastNonInteractiveSignInDateTime
+            ) | Where-Object { $_ }
+            if ($activityDates.Count) {
+                $lastActivity = $activityDates | Sort-Object -Descending | Select-Object -First 1
+            }
+        }
         $assignedLics = @()
         if ($user.AssignedLicenses) {
             foreach ($lic in $user.AssignedLicenses) {
@@ -105,6 +115,7 @@ try {
             mobilePhone         = $user.MobilePhone
             assignedLicenses    = $assignedLics
             createdDateTime     = $user.CreatedDateTime
+            lastActivityDateTime = $lastActivity
         }
     }
     Write-Host "Benutzer geladen: $($usersData.Count)"

@@ -24,6 +24,7 @@ function Connect-Mg365App {
         Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
     }
     $scopes = @(
+        'AuditLog.Read.All',
         'Device.Read.All',
         'DeviceManagementManagedDevices.Read.All',
         'DeviceManagementManagedDevices.PrivilegedOperations.All',

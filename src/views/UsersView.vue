@@ -136,6 +136,9 @@
                 Abteilung <i class="bi" :class="sortIcon('department')"></i>
               </th>
               <th>Status</th>
+              <th @click="setSort('lastActivityDateTime')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+                Aktivität <i class="bi" :class="sortIcon('lastActivityDateTime')"></i>
+              </th>
               <th>Lizenzen</th>
               <th style="width:160px;">Aktionen</th>
             </tr>
@@ -170,6 +173,9 @@
               <td>
                 <span class="badge-active" v-if="user.accountEnabled">Aktiv</span>
                 <span class="badge-inactive" v-else>Deaktiviert</span>
+              </td>
+              <td style="font-size:0.82rem;color:#8b949e;white-space:nowrap;" :title="user.lastActivityDateTime || ''">
+                {{ formatUserDateTime(user.lastActivityDateTime) }}
               </td>
               <td>
                 <div v-if="user.assignedLicenses?.length">
@@ -706,8 +712,14 @@ const filteredUsers = computed(() => {
   }
 
   return [...list].sort((a, b) => {
-    const av = (a[sortKey.value] || '').toLowerCase()
-    const bv = (b[sortKey.value] || '').toLowerCase()
+    const key = sortKey.value
+    if (key === 'lastActivityDateTime') {
+      const av = dateSortKey(a[key])
+      const bv = dateSortKey(b[key])
+      return av < bv ? -sortDir.value : av > bv ? sortDir.value : 0
+    }
+    const av = (a[key] || '').toLowerCase()
+    const bv = (b[key] || '').toLowerCase()
     return av < bv ? -sortDir.value : av > bv ? sortDir.value : 0
   })
 })
@@ -974,6 +986,19 @@ function setSort(key) {
 function sortIcon(key) {
   if (sortKey.value !== key) return 'bi-chevron-expand text-secondary'
   return sortDir.value === 1 ? 'bi-chevron-up' : 'bi-chevron-down'
+}
+
+function dateSortKey(iso) {
+  if (!iso) return 0
+  const t = new Date(iso).getTime()
+  return Number.isNaN(t) ? 0 : t
+}
+
+function formatUserDateTime(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 const UPN_DISPLAY_MAX = 40
