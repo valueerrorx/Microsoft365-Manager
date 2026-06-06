@@ -10,9 +10,11 @@ $ErrorActionPreference = 'Continue'
 $ProgressPreference = 'SilentlyContinue'
 
 try {
+    $authRecordPath = Join-Path $HOME '.mg\mg.authrecord.json'
+    if (-not (Test-Path -LiteralPath $authRecordPath)) {
+        throw "Keine bestehende Anmeldung."
+    }
     Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
-    try { Set-MgGraphOption -DisableLoginByWAM $true -ErrorAction SilentlyContinue } catch {}
-    # KEIN -UseDeviceCode: reconnectet still aus dem Token-Cache oder schlaegt sofort fehl.
     Connect-MgGraph -NoWelcome -ErrorAction Stop | Out-Null
     $ctx = Get-MgContext
     if (-not $ctx -or -not $ctx.Account) { throw "Keine aktive Sitzung" }

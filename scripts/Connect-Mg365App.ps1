@@ -28,18 +28,21 @@ function Connect-Mg365App {
         'UserAuthenticationMethod.ReadWrite.All',
         'RoleManagement.ReadWrite.Directory'
     )
+    $authRecordPath = Join-Path $HOME '.mg\mg.authrecord.json'
     $useDeviceCode = $env:MS365_ELECTRON_APP -eq '1'
     if ($useDeviceCode) {
-        try {
+        # Nur aus Cache reconnecten wenn Auth-Record existiert; sonst WAM ohne HWND (120s-Timeout).
+        if (Test-Path -LiteralPath $authRecordPath) {
             Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop | Out-Null
-            if ((Get-MgContext)) {
+            if (Get-MgContext) {
                 Write-Host "Bestehende Anmeldung wiederverwendet."
                 return
             }
-        } catch {}
+            throw "Token-Cache vorhanden, aber keine aktive Sitzung."
+        }
         Write-Host "Device-Code-Anmeldung - Browser oeffnet sich automatisch..." -ForegroundColor Yellow
         Write-Host "Code steht unten im Ausgabefenster; auf der Seite eingeben und anmelden." -ForegroundColor Yellow
-        Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ErrorAction Stop
+        Connect-MgGraph -Scopes $scopes -UseDeviceCode -NoWelcome -ClientTimeout 600 -ErrorAction Stop
         Write-Host "Anmeldung erfolgreich."
         return
     }
