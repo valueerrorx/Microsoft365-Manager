@@ -432,14 +432,9 @@ function detectPowerShell() {
   return tryCmd('pwsh') || tryCmd('powershell') || 'pwsh'
 }
 
-/** True when pwsh is missing or cannot start (Linux/macOS/Windows). */
+// Same resolution as detectPowerShell (PATH + default install paths), not bare "pwsh" only.
 function checkPwshForDashboard() {
-  const r = spawnSync('pwsh', ['-NoLogo', '-NoProfile', '-Command', 'exit 0'], {
-    stdio: 'ignore',
-    timeout: 15000,
-    windowsHide: true
-  })
-  const ok = r.status === 0 && !r.error
+  const ok = isPwshCommand(detectPowerShell())
   return { shouldWarn: !ok, usingLegacyPowerShell: process.platform === 'win32' && !ok }
 }
 
