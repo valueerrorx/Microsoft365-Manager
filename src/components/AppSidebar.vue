@@ -5,9 +5,7 @@
   <nav class="app-sidebar">
     <!-- Brand -->
     <div class="sidebar-brand d-flex align-items-center gap-2">
-      <div style="width:28px;height:28px;background:linear-gradient(135deg,#58a6ff,#1f6feb);border-radius:6px;display:flex;align-items:center;justify-content:center;">
-        <i class="bi bi-microsoft" style="color:white;font-size:0.85rem;"></i>
-      </div>
+      <img src="/icon.png" style="width:28px;border-radius:6px;" alt="MS365 Manager" />
       <div>
         <div style="font-size:0.875rem;line-height:1.2">MS365 Manager</div>
         <div style="font-size:0.68rem;color:#8b949e;font-weight:400">User Dashboard</div>
