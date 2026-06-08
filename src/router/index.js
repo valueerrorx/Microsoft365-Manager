@@ -5,6 +5,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import DashboardView from '../views/DashboardView.vue'
 import UsersView from '../views/UsersView.vue'
 import CreateUsersView from '../views/CreateUsersView.vue'
+import RemoveUsersView from '../views/RemoveUsersView.vue'
 import GroupsView from '../views/GroupsView.vue'
 import DevicesView from '../views/DevicesView.vue'
 import RolesView from '../views/RolesView.vue'
@@ -15,7 +16,8 @@ const routes = [
   { path: '/groups', component: GroupsView, name: 'groups' },
   { path: '/devices', component: DevicesView, name: 'devices' },
   { path: '/roles', component: RolesView, name: 'roles' },
-  { path: '/create', component: CreateUsersView, name: 'create' }
+  { path: '/create', component: CreateUsersView, name: 'create' },
+  { path: '/remove', component: RemoveUsersView, name: 'remove' }
 ]
 
 export default createRouter({

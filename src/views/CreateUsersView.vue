@@ -199,6 +199,7 @@ import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import PasswordInput from '../components/PasswordInput.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
+import { normalizeForUPN } from '../utils/upn.js'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
@@ -225,16 +226,6 @@ const singlePreview = computed(() => {
     displayName: `${singleForm.nachname} ${singleForm.vorname}`
   }
 })
-
-function normalizeForUPN(text) {
-  if (!text) return ''
-  let s = String(text)
-  s = s.replace(/[äÄ]/g, 'ae').replace(/[öÖ]/g, 'oe').replace(/[üÜ]/g, 'ue').replace(/[ß]/g, 'ss')
-  s = s.replace(/[àáâãÀÁÂÃ]/g, 'a').replace(/[èéêëÈÉÊË]/g, 'e').replace(/[ìíîïÌÍÎÏ]/g, 'i')
-  s = s.replace(/[òóôõÒÓÔÕ]/g, 'o').replace(/[ùúûÙÚÛ]/g, 'u').replace(/[ýÿÝŸ]/g, 'y')
-  s = s.replace(/[çÇ]/g, 'c').replace(/[ñÑ]/g, 'n')
-  return s.toLowerCase().replace(/[^a-z0-9.]/g, '')
-}
 
 function entryUpn(entry) {
   const domain = authStore.tenantDomain || ''
