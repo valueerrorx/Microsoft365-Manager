@@ -388,7 +388,7 @@ function uiSend(channel, payload) {
 const stripAnsi = (t) => t.replace(/\x1b\[[0-9;]*[mGK]/g, '').replace(/\x1b\[[0-9;]*[HJ]/g, '')
 
 function isPwshCommand(cmd) {
-  return /(?:^|[\\/])pwsh(?:\.exe)?$/i.test(String(cmd || '').trim())
+  return /(?:^|[\\/])pwsh(?:-preview)?(?:\.exe)?$/i.test(String(cmd || '').trim())
 }
 
 // Windows: UTF-8 via -Command wrapper — must not prepend to .ps1 files (breaks leading param blocks).
@@ -416,20 +416,32 @@ function detectPowerShell() {
     })
     return r.status === 0 && !r.error ? cmd : null
   }
+  const candidates = [
+    process.env.PWSH_PATH,
+    'pwsh',
+    ...(process.platform === 'darwin'
+      ? ['/opt/homebrew/bin/pwsh', '/usr/local/bin/pwsh']
+      : []),
+    'pwsh-preview',
+    ...(process.platform === 'darwin'
+      ? ['/opt/homebrew/bin/pwsh-preview', '/usr/local/bin/pwsh-preview']
+      : []),
+    ...(process.platform === 'win32'
+      ? [
+          path.join(process.env.ProgramFiles || 'C:\\Program Files', 'PowerShell', '7', 'pwsh.exe'),
+          path.join(process.env.ProgramFiles || 'C:\\Program Files', 'PowerShell', '7-preview', 'pwsh.exe'),
+          path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps', 'pwsh.exe')
+        ]
+      : [])
+  ].filter(Boolean)
+  for (const cmd of candidates) {
+    const ok = tryCmd(cmd)
+    if (ok) return ok
+  }
   if (process.platform === 'win32') {
-    const candidates = [
-      process.env.PWSH_PATH,
-      'pwsh',
-      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'PowerShell', '7', 'pwsh.exe'),
-      path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps', 'pwsh.exe')
-    ].filter(Boolean)
-    for (const cmd of candidates) {
-      const ok = tryCmd(cmd)
-      if (ok) return ok
-    }
     return tryCmd('powershell.exe') || 'powershell.exe'
   }
-  return tryCmd('pwsh') || tryCmd('powershell') || 'pwsh'
+  return tryCmd('powershell') || 'pwsh'
 }
 
 // Same resolution as detectPowerShell (PATH + default install paths), not bare "pwsh" only.
