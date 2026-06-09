@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
-# Pinned Graph SDK — avoids DeviceCodeCredential token-cache bug in Microsoft.Graph.Authentication >= 2.34.
-$script:Mg365GraphSdkVersion = [version]'2.33.0'
+# Pinned Graph SDK version (all Microsoft.Graph.* modules must match to avoid duplicate-assembly load errors).
+$script:Mg365GraphSdkVersion = [version]'2.36.1'
 
 function Ensure-Mg365GraphModule {
     param([Parameter(Mandatory = $true)][string]$Name)
