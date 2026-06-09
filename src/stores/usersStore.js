@@ -281,6 +281,39 @@ export const useUsersStore = defineStore('users', {
       }
     },
 
+    // Batch enable/disable via one PS script + Graph $batch (20 PATCHes per request).
+    async setUsersEnabledBatch(upns, enabled) {
+      const auth = useAuthStore()
+      const list = Array.isArray(upns) ? upns.filter(Boolean) : []
+      if (!list.length) return { ok: 0, fail: 0 }
+      const verb = enabled ? 'Aktivieren' : 'Deaktivieren'
+      auth.addLog({ type: 'info', message: `Batch-${verb}: ${list.length} Benutzer` })
+      try {
+        const result = await window.ipcRenderer.invoke('set-users-enabled', { upns: list, enabled })
+        const updatedUpns = Array.isArray(result.updatedUpns) ? result.updatedUpns : []
+        const errors = Array.isArray(result.errors) ? result.errors : []
+        for (const upn of updatedUpns) {
+          const idx = this.users.findIndex(u => u.userPrincipalName === upn)
+          if (idx !== -1) this.users[idx].accountEnabled = enabled
+          auth.addLog({ type: 'success', message: `${verb}: ${upn}` })
+        }
+        for (const err of errors) {
+          auth.addLog({ type: 'error', message: `${err.upn}: ${err.message}` })
+        }
+        const ok = updatedUpns.length
+        const fail = errors.length
+        const msg = result.message || `${verb}: ${ok}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
+        if (fail && !ok) auth.showToast(msg, 'error')
+        else if (fail) auth.showToast(msg, 'warning')
+        else auth.showToast(msg, 'success')
+        return { ok, fail }
+      } catch (e) {
+        auth.addLog({ type: 'error', message: e.message })
+        auth.showToast(e.message, 'error')
+        return { ok: 0, fail: list.length }
+      }
+    },
+
     async fetchDirectoryGroups() {
       const auth = useAuthStore()
       this.directoryGroupsLoading = true

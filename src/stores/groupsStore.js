@@ -135,6 +135,36 @@ export const useGroupsStore = defineStore('groups', {
       }
     },
 
+    // Batch delete via one PS script + Graph $batch (20 deletes per request).
+    async deleteGroupsBatch(groupIds) {
+      const auth = useAuthStore()
+      const list = Array.isArray(groupIds) ? groupIds.filter(Boolean) : []
+      if (!list.length) return { ok: 0, fail: 0 }
+      auth.addLog?.({ type: 'info', message: `Batch-Löschen: ${list.length} Gruppen` })
+      try {
+        const result = await window.ipcRenderer.invoke('delete-groups', { groupIds: list })
+        const deletedIds = Array.isArray(result.deletedGroupIds) ? result.deletedGroupIds : []
+        const errors = Array.isArray(result.errors) ? result.errors : []
+        if (deletedIds.length) {
+          const del = new Set(deletedIds)
+          this.groups = this.groups.filter((g) => !del.has(g.id))
+        }
+        for (const err of errors) {
+          auth.addLog?.({ type: 'error', message: `${err.groupId}: ${err.message}` })
+        }
+        const ok = deletedIds.length
+        const fail = errors.length
+        const msg = result.message || `Gelöscht: ${ok}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
+        if (fail && !ok) auth.showToast(msg, 'error')
+        else if (fail) auth.showToast(msg, 'warning')
+        else auth.showToast(msg, 'success')
+        return { ok, fail }
+      } catch (e) {
+        auth.showToast(e.message, 'error')
+        return { ok: 0, fail: list.length }
+      }
+    },
+
     async removeGroupMember({ groupId, memberId }) {
       const auth = useAuthStore()
       try {

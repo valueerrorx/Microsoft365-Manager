@@ -388,7 +388,7 @@
           </div>
           <div class="modal-body">
             <p class="small" style="color:#8b949e;">
-              <strong style="color:#e6edf3;">{{ batchDeleteModal.targets.length }}</strong> Gruppen werden endgültig gelöscht (nacheinander).
+              <strong style="color:#e6edf3;">{{ batchDeleteModal.targets.length }}</strong> Gruppen werden endgültig gelöscht.
             </p>
             <ul class="list-unstyled mb-3 small" style="color:#8b949e;max-height:240px;overflow:auto;">
               <li v-for="t in batchDeleteModal.targets" :key="t.id" class="py-1 border-bottom border-secondary border-opacity-25">
@@ -872,9 +872,7 @@ function openBatchDeleteGroups() {
 async function runBatchDeleteGroups() {
   if (batchDeleteModal.confirmText !== 'LÖSCHEN') return
   batchDeleteModal.running = true
-  for (const t of batchDeleteModal.targets) {
-    await groupsStore.deleteGroup(t.id)
-  }
+  await groupsStore.deleteGroupsBatch(batchDeleteModal.targets.map((t) => t.id))
   batchDeleteModal.running = false
   batchDeleteModal.show = false
   clearGroupSelection()

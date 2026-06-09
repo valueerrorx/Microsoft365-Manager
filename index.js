@@ -1426,6 +1426,46 @@ ipcMain.handle('delete-users', async (_event, { upns = [] }) => {
   }
 })
 
+ipcMain.handle('set-users-enabled', async (_event, { upns = [], enabled } = {}) => {
+  const empty = { status: 'error', message: 'upns erforderlich', updated: 0, failed: 0, updatedUpns: [], errors: [] }
+  try {
+    const list = Array.isArray(upns) ? upns.map((u) => String(u || '').trim()).filter(Boolean) : []
+    if (!list.length) return empty
+    const result = await runPsScript('scripts/set-users-enabled.ps1', ['-UPNs', list.join(','), '-Enabled', enabled ? 'true' : 'false'], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    if (result.exitCode === -1 && !result.stdout) {
+      return { ...empty, message: result.stderr || 'PowerShell konnte nicht gestartet werden' }
+    }
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { ...empty, message: result.stderr || 'Fehler beim Batch-Update' }
+    uiSend('ps-operation-complete', { status: data.status, count: list.length })
+    return data
+  } catch (e) {
+    return { ...empty, message: e?.message }
+  }
+})
+
+ipcMain.handle('delete-groups', async (_event, { groupIds = [] } = {}) => {
+  const empty = { status: 'error', message: 'groupIds erforderlich', deleted: 0, failed: 0, deletedGroupIds: [], errors: [] }
+  try {
+    const list = Array.isArray(groupIds) ? groupIds.map((g) => String(g || '').trim()).filter(Boolean) : []
+    if (!list.length) return empty
+    const result = await runPsScript('scripts/delete-groups.ps1', ['-GroupIds', list.join(',')], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    if (result.exitCode === -1 && !result.stdout) {
+      return { ...empty, message: result.stderr || 'PowerShell konnte nicht gestartet werden' }
+    }
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { ...empty, message: result.stderr || 'Fehler beim Batch-Löschen' }
+    uiSend('ps-operation-complete', { status: data.status, count: list.length })
+    return data
+  } catch (e) {
+    return { ...empty, message: e?.message }
+  }
+})
+
 ipcMain.handle('backup-tenant', async (_event, { categories = [] } = {}) => {
   try {
     const cats = (Array.isArray(categories) ? categories : []).map((c) => String(c).trim()).filter(Boolean)

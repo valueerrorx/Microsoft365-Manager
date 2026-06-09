@@ -602,7 +602,7 @@
           </div>
           <div class="modal-body">
             <p class="small" style="color:#8b949e;">
-              Es werden <strong style="color:#e6edf3;">{{ batchDeactivateModal.targets.length }}</strong> aktive Konten deaktiviert (nacheinander).
+              Es werden <strong style="color:#e6edf3;">{{ batchDeactivateModal.targets.length }}</strong> aktive Konten deaktiviert.
             </p>
             <ul class="batch-user-list list-unstyled mb-0 small" style="color:#8b949e;">
               <li v-for="t in batchDeactivateModal.targets" :key="t.userPrincipalName" class="py-1 border-bottom border-secondary border-opacity-25">
@@ -634,7 +634,7 @@
           </div>
           <div class="modal-body">
             <p class="small" style="color:#8b949e;">
-              Es werden <strong style="color:#e6edf3;">{{ batchActivateModal.targets.length }}</strong> deaktivierte Konten aktiviert (nacheinander).
+              Es werden <strong style="color:#e6edf3;">{{ batchActivateModal.targets.length }}</strong> deaktivierte Konten aktiviert.
             </p>
             <ul class="batch-user-list list-unstyled mb-0 small" style="color:#8b949e;">
               <li v-for="t in batchActivateModal.targets" :key="t.userPrincipalName" class="py-1 border-bottom border-secondary border-opacity-25">
@@ -991,44 +991,24 @@ async function runBatchMfa() {
 
 async function runBatchDeactivate() {
   batchDeactivateModal.running = true
-  let ok = 0
-  let fail = 0
-  for (const t of batchDeactivateModal.targets) {
-    const r = await usersStore.updateUser(
-      { upn: t.userPrincipalName, accountEnabled: false },
-      { quietToast: true }
-    )
-    if (r) ok++
-    else fail++
-  }
+  await usersStore.setUsersEnabledBatch(
+    batchDeactivateModal.targets.map((t) => t.userPrincipalName),
+    false
+  )
   batchDeactivateModal.running = false
   batchDeactivateModal.show = false
   clearSelection()
-  authStore.showToast(
-    `Deaktivieren (Batch): ${ok} OK${fail ? `, ${fail} fehlgeschlagen` : ''}`,
-    fail ? 'warning' : 'success'
-  )
 }
 
 async function runBatchActivate() {
   batchActivateModal.running = true
-  let ok = 0
-  let fail = 0
-  for (const t of batchActivateModal.targets) {
-    const r = await usersStore.updateUser(
-      { upn: t.userPrincipalName, accountEnabled: true },
-      { quietToast: true }
-    )
-    if (r) ok++
-    else fail++
-  }
+  await usersStore.setUsersEnabledBatch(
+    batchActivateModal.targets.map((t) => t.userPrincipalName),
+    true
+  )
   batchActivateModal.running = false
   batchActivateModal.show = false
   clearSelection()
-  authStore.showToast(
-    `Aktivieren (Batch): ${ok} OK${fail ? `, ${fail} fehlgeschlagen` : ''}`,
-    fail ? 'warning' : 'success'
-  )
 }
 
 async function runBatchDelete() {
