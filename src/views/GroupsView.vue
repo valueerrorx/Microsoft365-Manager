@@ -86,6 +86,9 @@
             <i class="bi bi-hourglass-split me-1"></i>
             Zur Ablaufrichtlinie hinzufügen
           </button>
+          <button type="button" class="btn btn-outline-danger btn-sm" @click="openBatchDeleteGroups">
+            <i class="bi bi-trash me-1"></i>Löschen
+          </button>
           <button type="button" class="btn btn-link btn-sm text-secondary ms-auto p-0" @click="clearGroupSelection">
             Auswahl aufheben
           </button>
@@ -369,6 +372,41 @@
               @click="runDeleteGroup"
             >
               {{ deleteModal.saving ? 'Löscht...' : 'Löschen' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch delete groups -->
+    <div v-if="batchDeleteModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger"><i class="bi bi-trash me-2"></i>Gruppen löschen (Batch)</h5>
+            <button type="button" class="btn-close" :disabled="batchDeleteModal.running" @click="batchDeleteModal.show = false"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small" style="color:#8b949e;">
+              <strong style="color:#e6edf3;">{{ batchDeleteModal.targets.length }}</strong> Gruppen werden endgültig gelöscht (nacheinander).
+            </p>
+            <ul class="list-unstyled mb-3 small" style="color:#8b949e;max-height:240px;overflow:auto;">
+              <li v-for="t in batchDeleteModal.targets" :key="t.id" class="py-1 border-bottom border-secondary border-opacity-25">
+                <strong style="color:#e6edf3;">{{ t.displayName }}</strong>
+              </li>
+            </ul>
+            <label class="form-label"><code>LÖSCHEN</code> eintippen zur Bestätigung</label>
+            <input v-model="batchDeleteModal.confirmText" type="text" class="form-control" :disabled="batchDeleteModal.running" />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchDeleteModal.running" @click="batchDeleteModal.show = false">Abbrechen</button>
+            <button
+              type="button"
+              class="btn btn-danger btn-sm"
+              :disabled="batchDeleteModal.running || batchDeleteModal.confirmText !== 'LÖSCHEN'"
+              @click="runBatchDeleteGroups"
+            >
+              {{ batchDeleteModal.running ? 'Wird ausgeführt...' : 'Alle löschen' }}
             </button>
           </div>
         </div>
@@ -816,6 +854,30 @@ function openDeleteGroup(g) {
   deleteModal.group = g
   deleteModal.confirmName = ''
   deleteModal.show = true
+}
+
+const batchDeleteModal = reactive({ show: false, running: false, targets: [], confirmText: '' })
+
+// Batch delete: open confirm modal with all selected groups.
+function openBatchDeleteGroups() {
+  if (selectedGroupIds.value.length < 2) return
+  batchDeleteModal.targets = selectedGroupIds.value.map((id) => {
+    const g = groupsStore.groups.find((x) => x.id === id)
+    return { id, displayName: g?.displayName || id }
+  })
+  batchDeleteModal.confirmText = ''
+  batchDeleteModal.show = true
+}
+
+async function runBatchDeleteGroups() {
+  if (batchDeleteModal.confirmText !== 'LÖSCHEN') return
+  batchDeleteModal.running = true
+  for (const t of batchDeleteModal.targets) {
+    await groupsStore.deleteGroup(t.id)
+  }
+  batchDeleteModal.running = false
+  batchDeleteModal.show = false
+  clearGroupSelection()
 }
 
 async function runDeleteGroup() {
