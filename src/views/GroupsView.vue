@@ -45,6 +45,21 @@
               <option value="other">Sonstige (ohne M365)</option>
             </select>
           </div>
+          <div class="col-6 col-md-auto">
+            <select v-model="visibilityFilter" class="form-select form-select-sm" aria-label="Sichtbarkeit filtern">
+              <option value="all">Alle Sichtbarkeiten</option>
+              <option value="Public">Öffentlich</option>
+              <option value="Private">Privat</option>
+              <option value="HiddenMembership">Verborgen</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-auto">
+            <select v-model="teamsFilter" class="form-select form-select-sm" aria-label="Teams filtern">
+              <option value="all">Teams: Alle</option>
+              <option value="yes">Mit Team</option>
+              <option value="no">Ohne Team</option>
+            </select>
+          </div>
           <div class="col-auto ms-md-auto">
             <span style="font-size:0.8rem;color:#8b949e;">{{ filteredGroups.length }} Treffer</span>
           </div>
@@ -522,6 +537,8 @@ const usersStore = useUsersStore()
 
 const searchQuery = ref('')
 const groupTypeFilter = ref('all')
+const visibilityFilter = ref('all')
+const teamsFilter = ref('all')
 const sortKey = ref('displayName')
 const sortDir = ref(1)
 const currentPage = ref(1)
@@ -549,6 +566,13 @@ const filteredGroups = computed(() => {
       if (tf === 'other') return !unified
       return true
     })
+  }
+  if (visibilityFilter.value !== 'all') {
+    list = list.filter((g) => g.visibility === visibilityFilter.value)
+  }
+  if (teamsFilter.value !== 'all') {
+    const want = teamsFilter.value === 'yes'
+    list = list.filter((g) => !!g.hasTeam === want)
   }
   return [...list].sort((a, b) => {
     const key = sortKey.value
@@ -590,7 +614,7 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 
-watch(groupTypeFilter, () => {
+watch([groupTypeFilter, visibilityFilter, teamsFilter], () => {
   currentPage.value = 1
 })
 
