@@ -29,6 +29,7 @@ function Connect-Mg365App {
 
     $scopes = @(
         'AuditLog.Read.All',
+        'BitlockerKey.Read.All',
         'Device.Read.All',
         'DeviceManagementManagedDevices.Read.All',
         'DeviceManagementManagedDevices.PrivilegedOperations.All',

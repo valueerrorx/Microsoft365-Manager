@@ -595,7 +595,8 @@ const PARALLEL_PS_SCRIPTS = new Set([
   'scripts/get-group-owners.ps1',
   'scripts/get-group-members.ps1',
   'scripts/group-lifecycle.ps1',
-  'scripts/backup-tenant.ps1'
+  'scripts/backup-tenant.ps1',
+  'scripts/get-bitlocker-keys.ps1'
 ])
 
 let psScriptQueueTail = Promise.resolve()
@@ -1776,6 +1777,22 @@ ipcMain.handle('delete-entra-device', async (_event, body = {}) => {
     return data
   } catch (e) {
     return { status: 'error', message: e?.message }
+  }
+})
+
+ipcMain.handle('get-bitlocker-keys', async (_event, body = {}) => {
+  try {
+    const azureAdDeviceId = String(body?.azureAdDeviceId || '').trim()
+    if (!azureAdDeviceId) return { status: 'error', message: 'azureAdDeviceId erforderlich', keys: [] }
+    const result = await runPsScript('scripts/get-bitlocker-keys.ps1', ['-AzureAdDeviceId', azureAdDeviceId], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { status: 'error', message: result.stderr || 'Keine Antwort von PowerShell.', keys: [] }
+    uiSend('ps-operation-complete', { status: data.status })
+    return data
+  } catch (e) {
+    return { status: 'error', message: e?.message, keys: [] }
   }
 })
 

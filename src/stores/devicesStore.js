@@ -128,6 +128,17 @@ export const useDevicesStore = defineStore('devices', {
       }
     },
 
+    // Fetches BitLocker recovery keys for an Entra device (by azureADDeviceId).
+    async fetchBitlockerKeys(azureAdDeviceId) {
+      const id = String(azureAdDeviceId || '').trim()
+      if (!id) return { status: 'error', message: 'azureAdDeviceId erforderlich', keys: [] }
+      try {
+        return await window.ipcRenderer.invoke('get-bitlocker-keys', { azureAdDeviceId: id })
+      } catch (e) {
+        return { status: 'error', message: e.message, keys: [] }
+      }
+    },
+
     async wipeIntuneDevice({ azureAdDeviceId, intuneManagedDeviceId }) {
       const auth = useAuthStore()
       try {

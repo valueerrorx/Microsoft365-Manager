@@ -147,7 +147,7 @@
               <th @click="setSort('approximateLastSignInDateTime')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Aktivität <i class="bi" :class="sortIcon('approximateLastSignInDateTime')"></i>
               </th>
-              <th style="width:168px;">Aktionen</th>
+              <th style="width:200px;">Aktionen</th>
             </tr>
           </thead>
           <tbody>
@@ -192,6 +192,14 @@
               <td style="font-size:0.82rem;color:#8b949e;white-space:nowrap;" :title="d.approximateLastSignInDateTime || ''">{{ formatDeviceDateTime(d.approximateLastSignInDateTime) }}</td>
               <td>
                 <div class="d-flex gap-1 flex-wrap">
+                  <button
+                    type="button"
+                    class="btn-action"
+                    title="BitLocker-Wiederherstellungsschlüssel anzeigen"
+                    @click="openBitlockerModal(d)"
+                  >
+                    <i class="bi bi-key"></i>
+                  </button>
                   <button
                     type="button"
                     class="btn-action"
@@ -391,6 +399,52 @@
       </div>
     </div>
 
+    <!-- BitLocker Recovery Keys -->
+    <div v-if="bitlockerModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-key me-2" style="color:#58a6ff;"></i>
+              BitLocker-Schlüssel: {{ bitlockerModal.device?.displayName || bitlockerModal.device?.id }}
+            </h5>
+            <button type="button" class="btn-close" @click="bitlockerModal.show = false"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="bitlockerModal.loading" class="text-center py-4 text-secondary small">
+              <div class="spinner-border spinner-border-sm me-2" style="color:#58a6ff;"></div>
+              Schlüssel werden geladen…
+            </div>
+            <div v-else-if="bitlockerModal.error" class="alert alert-danger small mb-0">{{ bitlockerModal.error }}</div>
+            <div v-else-if="!bitlockerModal.keys.length" class="py-3 text-center small text-secondary">
+              Keine BitLocker-Wiederherstellungsschlüssel für dieses Gerät gefunden.
+            </div>
+            <div v-else>
+              <div
+                v-for="k in bitlockerModal.keys"
+                :key="k.id"
+                class="mb-2 p-2 rounded"
+                style="background:rgba(0,0,0,0.2);border:1px solid #30363d;"
+              >
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="small text-secondary">
+                    {{ k.volumeType || 'Volume' }} · {{ formatDeviceDateTime(k.createdDateTime) }}
+                  </span>
+                  <button type="button" class="btn btn-link btn-sm p-0" title="Schlüssel kopieren" @click="copyKey(k.key)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+                <code style="font-size:0.85rem;color:#e6edf3;word-break:break-all;">{{ k.key || '— (Wert nicht abrufbar)' }}</code>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" @click="bitlockerModal.show = false">Schließen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Zu Gruppe hinzufügen (Geräte) -->
     <div v-if="groupPickerModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
       <div class="modal-dialog modal-dialog-centered">
@@ -484,6 +538,7 @@ const retireModal = reactive({ show: false, device: null, disableUserAccount: fa
 const bulkRetireModal = reactive({ show: false, disableUserAccount: false, running: false, count: 0 })
 const wipeModal = reactive({ show: false, device: null, confirmName: '', running: false })
 const deleteEntraModal = reactive({ show: false, device: null, confirmName: '', running: false, error: '' })
+const bitlockerModal = reactive({ show: false, device: null, loading: false, keys: [], error: '' })
 
 const selectedDeviceIds = ref([])
 
@@ -798,6 +853,31 @@ function openWipeModal(d) {
   wipeModal.device = d
   wipeModal.confirmName = ''
   wipeModal.show = true
+}
+
+async function openBitlockerModal(d) {
+  bitlockerModal.device = d
+  bitlockerModal.keys = []
+  bitlockerModal.error = ''
+  bitlockerModal.show = true
+  // Recovery keys werden über die Entra deviceId (azureADDeviceId) gefiltert
+  const azureAdDeviceId = d.deviceId
+  if (!azureAdDeviceId) {
+    bitlockerModal.error = 'Keine Entra deviceId für dieses Gerät verfügbar.'
+    return
+  }
+  bitlockerModal.loading = true
+  const res = await devicesStore.fetchBitlockerKeys(azureAdDeviceId)
+  bitlockerModal.loading = false
+  if (res.status === 'ok') {
+    bitlockerModal.keys = res.keys || []
+  } else {
+    bitlockerModal.error = res.message || 'Schlüssel konnten nicht geladen werden.'
+  }
+}
+
+function copyKey(key) {
+  if (key) navigator.clipboard?.writeText(key)
 }
 
 async function runWipe() {
