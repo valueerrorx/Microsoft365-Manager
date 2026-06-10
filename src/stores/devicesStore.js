@@ -191,7 +191,8 @@ export const useDevicesStore = defineStore('devices', {
       return { ok, partial, fail }
     },
 
-    // Removes devices from the tenant per type: Intune-managed -> retire (cleans up Entra too), Entra-only -> delete directory object.
+    // Removes devices fully from the tenant: Intune-managed -> retire (unenroll) then delete the Entra object;
+    // Entra-only -> delete the directory object directly. Leaves no orphaned directory entry.
     async removeDevicesAutoBatch(deviceRows) {
       const auth = useAuthStore()
       const rows = Array.isArray(deviceRows) ? deviceRows.filter((r) => r?.id) : []
@@ -201,23 +202,28 @@ export const useDevicesStore = defineStore('devices', {
       for (const row of rows) {
         const label = row.displayName || row.id
         try {
-          let result
+          // Intune-Geräte zuerst sauber aus dem Management lösen
           if (row.isIntuneManaged) {
-            result = await window.ipcRenderer.invoke('retire-intune-device', {
+            const retireRes = await window.ipcRenderer.invoke('retire-intune-device', {
               azureAdDeviceId: row.deviceId || row.id,
               intuneManagedDeviceId: row.intuneManagedDeviceId || undefined,
               disableUserAccount: false,
               userUpn: row.ownerUserPrincipalName || undefined
             })
-          } else {
-            result = await window.ipcRenderer.invoke('delete-entra-device', { deviceId: row.id })
+            if (retireRes.status !== 'ok' && retireRes.status !== 'partial') {
+              fail++
+              auth.addLog({ type: 'error', message: `${label}: Retire fehlgeschlagen — ${retireRes.message || 'Fehler'}` })
+              continue
+            }
           }
-          if (result.status === 'ok' || result.status === 'partial') {
+          // Entra-Verzeichnisobjekt entfernen (für alle Geräte)
+          const delRes = await window.ipcRenderer.invoke('delete-entra-device', { deviceId: row.id })
+          if (delRes.status === 'ok') {
             ok++
-            auth.addLog({ type: 'success', message: `${label}: ${result.message || 'OK'}` })
+            auth.addLog({ type: 'success', message: `${label}: aus Tenant entfernt${row.isIntuneManaged ? ' (Retire + Entra-Delete)' : ' (Entra-Delete)'}` })
           } else {
             fail++
-            auth.addLog({ type: 'error', message: `${label}: ${result.message || 'Fehler'}` })
+            auth.addLog({ type: 'error', message: `${label}: Entra-Delete fehlgeschlagen — ${delRes.message || 'Fehler'}` })
           }
         } catch (e) {
           fail++
