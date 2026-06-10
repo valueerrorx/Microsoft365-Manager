@@ -1819,6 +1819,49 @@ ipcMain.handle('wipe-intune-device', async (_event, body = {}) => {
   }
 })
 
+ipcMain.handle('deploy-intune-script', async (_event, body = {}) => {
+  try {
+    const displayName = String(body?.displayName || '').trim()
+    const scriptContentBase64 = String(body?.scriptContentBase64 || '').trim()
+    const groupId = String(body?.groupId || '').trim()
+    if (!displayName) return { status: 'error', message: 'Name erforderlich' }
+    if (!scriptContentBase64) return { status: 'error', message: 'Script-Inhalt erforderlich' }
+    if (!groupId) return { status: 'error', message: 'groupId erforderlich' }
+    const args = [
+      '-DisplayName', displayName,
+      '-ScriptContentBase64', scriptContentBase64,
+      '-GroupId', groupId
+    ]
+    const fileName = String(body?.fileName || '').trim()
+    if (fileName) args.push('-FileName', fileName)
+    const result = await runPsScript('scripts/deploy-intune-script.ps1', args, (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { status: 'error', message: result.stderr || 'Keine Antwort von PowerShell.' }
+    uiSend('ps-operation-complete', { status: data.status })
+    return data
+  } catch (e) {
+    return { status: 'error', message: e?.message }
+  }
+})
+
+ipcMain.handle('get-intune-script-runstates', async (_event, body = {}) => {
+  try {
+    const scriptId = String(body?.scriptId || '').trim()
+    if (!scriptId) return { status: 'error', message: 'scriptId erforderlich', states: [] }
+    const result = await runPsScript('scripts/get-intune-script-runstates.ps1', ['-ScriptId', scriptId], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { status: 'error', message: result.stderr || 'Keine Antwort von PowerShell.', states: [] }
+    uiSend('ps-operation-complete', { status: data.status })
+    return data
+  } catch (e) {
+    return { status: 'error', message: e?.message, states: [] }
+  }
+})
+
 ipcMain.handle('get-group-owners', async (_event, { groupId }) => {
   try {
     const gid = String(groupId || '').trim()

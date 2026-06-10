@@ -19,6 +19,7 @@ export const GRAPH_DELEGATED_SCOPES = [
     'Device.Read.All',
     'DeviceManagementManagedDevices.Read.All',
     'DeviceManagementManagedDevices.PrivilegedOperations.All',
+    'DeviceManagementConfiguration.ReadWrite.All',
     'Directory.ReadWrite.All',
     'Group.ReadWrite.All',
     'GroupMember.ReadWrite.All',

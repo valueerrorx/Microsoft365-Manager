@@ -309,6 +309,51 @@ export const useGroupsStore = defineStore('groups', {
         auth.showToast(e.message, 'error')
         return { ok: false, result: null }
       }
+    },
+
+    // Laedt ein PowerShell-Script als Intune-Plattform-Script hoch und weist es der Gruppe zu.
+    // scriptContent ist Klartext; wird hier Base64-kodiert (Intune-Anforderung). Gibt scriptId zurueck.
+    async deployScriptToGroup({ groupId, displayName, scriptContent, fileName }) {
+      const auth = useAuthStore()
+      const gid = String(groupId || '').trim()
+      const name = String(displayName || '').trim()
+      const content = String(scriptContent || '')
+      if (!gid || !name || !content.trim()) {
+        auth.showToast('Gruppe, Name und Script-Inhalt erforderlich', 'error')
+        return { ok: false, result: null }
+      }
+      const scriptContentBase64 = btoa(unescape(encodeURIComponent(content)))
+      auth.addLog({ type: 'info', message: `Lade Intune-Script '${name}' hoch...` })
+      try {
+        const result = await window.ipcRenderer.invoke('deploy-intune-script', {
+          groupId: gid,
+          displayName: name,
+          scriptContentBase64,
+          fileName: fileName || 'script.ps1'
+        })
+        if (result.status === 'ok') {
+          auth.addLog({ type: 'success', message: result.message })
+          auth.showToast(result.message, 'success')
+          return { ok: true, result }
+        }
+        auth.addLog({ type: 'error', message: result.message || 'Script-Deploy fehlgeschlagen' })
+        auth.showToast(result.message || 'Script-Deploy fehlgeschlagen', 'error')
+        return { ok: false, result }
+      } catch (e) {
+        auth.showToast(e.message, 'error')
+        return { ok: false, result: null }
+      }
+    },
+
+    // Liest die Ausfuehrungs-Zustaende eines zuvor deployten Intune-Scripts (pro Geraet).
+    async fetchScriptRunStates(scriptId) {
+      const sid = String(scriptId || '').trim()
+      if (!sid) return { status: 'error', message: 'scriptId fehlt', states: [] }
+      try {
+        return await window.ipcRenderer.invoke('get-intune-script-runstates', { scriptId: sid })
+      } catch (e) {
+        return { status: 'error', message: e.message, states: [] }
+      }
     }
   }
 })

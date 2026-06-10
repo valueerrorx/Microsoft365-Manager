@@ -138,7 +138,7 @@
                 Ablauf <i class="bi" :class="sortIcon('expirationDateTime')"></i>
               </th>
               <th>Teams</th>
-              <th style="width:140px;">Aktionen</th>
+              <th style="width:172px;">Aktionen</th>
             </tr>
           </thead>
           <tbody>
@@ -164,12 +164,15 @@
                 <span v-else class="badge-inactive">Nein</span>
               </td>
               <td>
-                <div class="d-flex gap-1 flex-wrap">
+                <div class="d-flex gap-1 flex-nowrap">
                   <button class="btn-action" title="Bearbeiten" @click="openEditGroup(g)">
                     <i class="bi bi-pencil"></i>
                   </button>
                   <button class="btn-action" title="Mitglieder" @click="openMembersModal(g)">
                     <i class="bi bi-people"></i>
+                  </button>
+                  <button class="btn-action" title="PowerShell-Script ausführen (Intune)" @click="openScriptModal(g)">
+                    <i class="bi bi-terminal"></i>
                   </button>
                   <button class="btn-action danger" title="Gruppe löschen" @click="openDeleteGroup(g)">
                     <i class="bi bi-trash"></i>
@@ -520,6 +523,84 @@
                 </table>
               </div>
             </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run PowerShell script on group (Intune platform script) -->
+    <div v-if="scriptModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-terminal me-2" style="color:#58a6ff;"></i>Script ausführen: {{ scriptModal.group?.displayName }}</h5>
+            <button type="button" class="btn-close" :disabled="scriptModal.running" @click="scriptModal.show = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info small py-2">
+              Das Script wird als Intune-Plattform-Script hochgeladen und dieser Gruppe zugewiesen. Es läuft als
+              <strong>SYSTEM</strong> auf den Intune-verwalteten Windows-Geräten der Gruppe — <strong>beim nächsten Geräte-Check-in</strong>
+              (nicht sofort), maximal einmal pro Gerät.
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Name (in Intune sichtbar)</label>
+              <input v-model="scriptForm.displayName" type="text" class="form-control" placeholder="z. B. Lokaler Admin ezadmin" :disabled="scriptModal.running" />
+            </div>
+            <div class="mb-2 d-flex align-items-center gap-2">
+              <label class="form-label mb-0">PowerShell-Code</label>
+              <label class="btn btn-outline-secondary btn-sm mb-0" :class="{ disabled: scriptModal.running }">
+                <i class="bi bi-upload me-1"></i>.ps1 importieren
+                <input type="file" accept=".ps1,text/plain" class="d-none" :disabled="scriptModal.running" @change="onScriptFilePicked" />
+              </label>
+            </div>
+            <textarea
+              v-model="scriptForm.scriptContent"
+              class="form-control font-monospace"
+              rows="12"
+              spellcheck="false"
+              placeholder="# PowerShell-Code hier einfügen oder .ps1 importieren"
+              :disabled="scriptModal.running"
+              style="font-size:0.8rem;"
+            ></textarea>
+
+            <div v-if="scriptModal.deployedId" class="border-top pt-3 mt-3">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-medium" style="color:#e6edf3;">Ausführungs-Status pro Gerät</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="scriptModal.statesLoading" @click="loadRunStates">
+                  <i class="bi bi-arrow-clockwise me-1" :class="{ spin: scriptModal.statesLoading }"></i>
+                  Status aktualisieren
+                </button>
+              </div>
+              <p class="small text-secondary mb-2">
+                Erste Ergebnisse erscheinen erst nach dem nächsten Geräte-Check-in (kann bis zu ~1 Stunde oder länger dauern).
+              </p>
+              <div v-if="!scriptModal.runStates.length" class="small text-secondary">Noch keine Geräte-Zustände.</div>
+              <div v-else class="table-ms365-hscroll">
+                <table class="table table-sm table-ms365 mb-0">
+                  <thead>
+                    <tr><th>Gerät</th><th>Status</th><th>Meldung</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(s, i) in scriptModal.runStates" :key="i">
+                      <td>{{ s.deviceName || '—' }}</td>
+                      <td class="small">{{ s.runState || '—' }}</td>
+                      <td class="small" style="color:#8b949e;">{{ s.resultMessage || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" :disabled="scriptModal.running" @click="scriptModal.show = false">Schließen</button>
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              :disabled="scriptModal.running || !scriptForm.displayName.trim() || !scriptForm.scriptContent.trim()"
+              @click="runDeployScript"
+            >
+              {{ scriptModal.running ? 'Lädt hoch…' : scriptModal.deployedId ? 'Erneut hochladen' : 'Hochladen & zuweisen' }}
+            </button>
           </div>
         </div>
       </div>
@@ -1025,6 +1106,85 @@ watch(
     selectedGroupIds.value = selectedGroupIds.value.filter((id) => valid.has(id))
   }
 )
+
+const scriptModal = reactive({
+  show: false,
+  running: false,
+  group: null,
+  deployedId: null,
+  statesLoading: false,
+  runStates: []
+})
+// Beispiel-Script (lokalen Admin 'ezadmin' anlegen/Passwort setzen), als Vorlage im Code-Feld.
+const SAMPLE_SCRIPT = `$ErrorActionPreference = 'Stop'
+$user = 'ezadmin'
+$pwPlain = 'test'
+$pw = ConvertTo-SecureString $pwPlain -AsPlainText -Force
+
+$existing = Get-LocalUser -Name $user -ErrorAction SilentlyContinue
+if ($existing) {
+    Set-LocalUser -Name $user -Password $pw -PasswordNeverExpires $true
+} else {
+    New-LocalUser -Name $user -Password $pw -PasswordNeverExpires -AccountNeverExpires \`
+        -FullName 'EZ Admin' -Description 'Lokaler Admin (Intune)'
+}
+
+# Zur lokalen Administratoren-Gruppe (SID S-1-5-32-544, sprachneutral) hinzufuegen
+$adminGroup = (Get-LocalGroup -SID 'S-1-5-32-544').Name
+if (-not (Get-LocalGroupMember -Group $adminGroup -Member $user -ErrorAction SilentlyContinue)) {
+    Add-LocalGroupMember -Group $adminGroup -Member $user
+}
+
+Write-Output "ezadmin bereit (Admin)."
+`
+
+const scriptForm = reactive({ displayName: '', scriptContent: '' })
+
+function openScriptModal(g) {
+  scriptModal.group = g
+  scriptModal.deployedId = null
+  scriptModal.runStates = []
+  scriptForm.displayName = ''
+  scriptForm.scriptContent = SAMPLE_SCRIPT
+  scriptModal.show = true
+}
+
+// Liest eine importierte .ps1 als Text in das Code-Feld.
+function onScriptFilePicked(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    scriptForm.scriptContent = String(reader.result || '')
+    if (!scriptForm.displayName.trim()) scriptForm.displayName = file.name.replace(/\.ps1$/i, '')
+  }
+  reader.readAsText(file)
+  e.target.value = ''
+}
+
+async function runDeployScript() {
+  if (!scriptModal.group) return
+  scriptModal.running = true
+  const { ok, result } = await groupsStore.deployScriptToGroup({
+    groupId: scriptModal.group.id,
+    displayName: scriptForm.displayName.trim(),
+    scriptContent: scriptForm.scriptContent,
+    fileName: `${scriptForm.displayName.trim().replace(/[^\w.-]+/g, '_') || 'script'}.ps1`
+  })
+  scriptModal.running = false
+  if (ok && result?.scriptId) {
+    scriptModal.deployedId = result.scriptId
+    scriptModal.runStates = []
+  }
+}
+
+async function loadRunStates() {
+  if (!scriptModal.deployedId) return
+  scriptModal.statesLoading = true
+  const res = await groupsStore.fetchScriptRunStates(scriptModal.deployedId)
+  scriptModal.statesLoading = false
+  if (res.status === 'ok') scriptModal.runStates = res.states || []
+}
 
 onMounted(() => {
   if (!groupsStore.lastFetched) groupsStore.fetchGroupsDetail()

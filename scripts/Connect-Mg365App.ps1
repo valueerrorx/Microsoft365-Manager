@@ -33,6 +33,7 @@ function Connect-Mg365App {
         'Device.Read.All',
         'DeviceManagementManagedDevices.Read.All',
         'DeviceManagementManagedDevices.PrivilegedOperations.All',
+        'DeviceManagementConfiguration.ReadWrite.All',
         'Directory.ReadWrite.All',
         'Group.ReadWrite.All',
         'GroupMember.ReadWrite.All',
