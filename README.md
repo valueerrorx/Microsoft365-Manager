@@ -32,8 +32,8 @@ Electron-App zur Verwaltung von Microsoft-365-/Entra-ID-**Benutzern**, **Gruppen
 
 ### Aktionen
 - **Erstellen / Import** (`/create`): Einzelbenutzer oder CSV — nur **neue** Konten; A3 Schüler/Lehrer-Lizenz bei Erkennung
-- **Entfernen / CSV** (`/remove`): Benutzer per Vorname/Nachname-CSV bulk-löschen
-- **Geräte entfernen / CSV** (`/remove-devices`): alle Geräte eines Besitzers (Retire + Entra-Delete)
+- **Batch / CSV** (`/remove`): Benutzer per CSV abgleichen und Bulk-Aktionen ausführen — **löschen**, **zu Gruppe hinzufügen**, **Abteilung setzen** (jeweils ein Graph-`$batch`-Lauf; bereits korrekte Abteilungen werden übersprungen). **Lazy-Matching** für abweichende Schreibweisen (Doppelnamen in Vor-/Familienname) mit Vorschlag + Bestätigung pro Zeile; Filter (gefunden/fuzzy/nicht gefunden) und sortierbare Status-Spalte
+- **Geräte entfernen / CSV** (`/remove-devices`): alle Geräte eines Besitzers (Retire + Entra-Delete); ebenfalls mit **Lazy-Matching**, Kategorie-Filter und sortierbarer Geräte-Spalte
 - **Gruppe erstellen** (`/create-group`): Sicherheits- oder M365-Gruppe
 - **Backup** (`/backup`): Benutzer, Gruppen, Rollen als JSON sichern/wiederherstellen
 
@@ -58,14 +58,14 @@ npm run dev
 Semikolon oder Komma; Beispiel: [`user-list.csv`](./user-list.csv)
 
 ```csv
-Vorname,Nachname,Abteilung,UserType,NewPassword,ForceChange
+Vorname,Familienname,Abteilung,UserType,NewPassword,ForceChange
 Max,Mustermann,2025,Schüler,Passwort123!,1
 Anna,Schmidt,2025,Lehrer,Passwort456!,0
 ```
 
 | Feld | Pflicht | Beschreibung |
 |------|---------|--------------|
-| Vorname, Nachname | ja | UPN = `nachname.vorname@tenant-domain`, DisplayName = „Nachname Vorname“ |
+| Vorname, Familienname | ja | UPN = `familienname.vorname@tenant-domain`, DisplayName = „Familienname Vorname“ |
 | Abteilung | nein | z. B. Jahrgang |
 | UserType | nein | `Schüler` oder `Lehrer` → A3-Lizenz |
 | NewPassword | ja | Initialpasswort |
@@ -73,7 +73,7 @@ Anna,Schmidt,2025,Lehrer,Passwort456!,0
 
 **Hinweis:** Existiert der UPN bereits → Fehler (kein Update). Bestehende Konten über **Benutzerliste** pflegen.
 
-Für **Löschen** (Benutzer/Geräte per CSV) reichen `Vorname` + `Nachname`; Zusatzspalten werden ignoriert.
+Für **Batch / Geräte entfernen** (per CSV) reichen `Vorname` + `Familienname`; Zusatzspalten werden ignoriert. Der Spaltenkopf `Nachname` wird weiterhin akzeptiert. Encoding (UTF-8/Latin-1) wird automatisch erkannt, Umlaute und Diakritika (z. B. `ć`, `ž`, `ă`, `ȳ`) werden korrekt in den UPN übersetzt. Jede CSV-View (Erstellen, Batch, Geräte) hält ihre **eigene** importierte Liste, die über Navigation erhalten bleibt.
 
 ## Kurzanleitung
 
