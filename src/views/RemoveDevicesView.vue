@@ -94,8 +94,8 @@ Anna;Schmidt</pre>
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Vorname</th>
                                     <th>Nachname</th>
+                                    <th>Vorname</th>
                                     <th>Besitzer-UPN</th>
                                     <th @click="toggleDeviceSort" style="cursor:pointer;user-select:none;">
                                         Geräte
@@ -106,8 +106,8 @@ Anna;Schmidt</pre>
                             <tbody>
                                 <tr v-for="(row, i) in sortedRows" :key="i">
                                     <td style="color:#8b949e;">{{ i + 1 }}</td>
-                                    <td>{{ row.entry.vorname }}</td>
                                     <td>{{ row.entry.nachname }}</td>
+                                    <td>{{ row.entry.vorname }}</td>
                                     <td style="font-family:monospace;font-size:0.72rem;" :style="{ color: row.candidate ? '#d29922' : row.devices.length ? '#3fb950' : '#8b949e' }">{{ row.upn || '—' }}</td>
                                     <td>
                                         <span v-if="row.devices.length" :style="{ color: row.lazy ? '#58a6ff' : '#3fb950', 'font-size': '0.8rem' }" class="d-inline-flex align-items-center gap-2">
