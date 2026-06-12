@@ -135,18 +135,18 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/graph-device-auth.mjs": {
-    "mtime": 1780758201.162357,
-    "ast_hash": "cf57c411303724b03f2e4e4048f2c003",
+    "mtime": 1781263244.2217376,
+    "ast_hash": "c309ac8fc8b087cfbf314bfc4b1672fe",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/index.js": {
-    "mtime": 1780913607.287324,
-    "ast_hash": "edddd60116adeadd73c9b20516a51fdc",
+    "mtime": 1781263248.8446622,
+    "ast_hash": "c27682dad6f44c58cb4ba5b6055faf68",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/package.json": {
-    "mtime": 1780910402.2370481,
-    "ast_hash": "402469193c0401927183c7f2acd2d208",
+    "mtime": 1781249863.9319062,
+    "ast_hash": "a904b248a5880b1df20dfb3ee998d91e",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/preload.js": {
@@ -160,8 +160,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/Connect-Mg365App.ps1": {
-    "mtime": 1780911713.7932162,
-    "ast_hash": "552495ff14b282cc92e47fec45db7e32",
+    "mtime": 1781263244.1165597,
+    "ast_hash": "6dad365fb121a8ae799b981c06586404",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/DirectoryRole-Mg365.ps1": {
@@ -180,8 +180,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/check-graph-connection.ps1": {
-    "mtime": 1780902618.8895555,
-    "ast_hash": "b9cec133bd804aa6e07d19abfad3ac7b",
+    "mtime": 1780918410.6258962,
+    "ast_hash": "3875888f614dbc973be9f44470f45727",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/delete-group.ps1": {
@@ -240,8 +240,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/get-ms365-users.ps1": {
-    "mtime": 1780912464.817957,
-    "ast_hash": "5d2822ea75331033e0cba12ddc956021",
+    "mtime": 1780935258.9132445,
+    "ast_hash": "226780704dbea0e184a7d503343c2ca9",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/group-lifecycle.ps1": {
@@ -290,13 +290,13 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/components/AppSidebar.vue": {
-    "mtime": 1780908285.7434707,
-    "ast_hash": "522afa36a034d646439fb50c0a629e3a",
+    "mtime": 1781176642.0,
+    "ast_hash": "a5ae30d0977dc873ed202bb1257fab19",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/components/LogConsole.vue": {
-    "mtime": 1776369155.8277407,
-    "ast_hash": "4316b98f57c06e0d1ab7752add6d5590",
+    "mtime": 1780929997.5556695,
+    "ast_hash": "526b23c74b18a0fd2346ee78e419ac47",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/components/PasswordInput.vue": {
@@ -310,8 +310,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/router/index.js": {
-    "mtime": 1780500636.771875,
-    "ast_hash": "dfcddc28489217736edf6489dd8207ba",
+    "mtime": 1781104289.5985312,
+    "ast_hash": "d7f48fc57e49a8c19696fce390b59c50",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/stores/authStore.js": {
@@ -320,13 +320,13 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/stores/devicesStore.js": {
-    "mtime": 1780757710.4460287,
-    "ast_hash": "929e372455672914ecff25e9dce726e5",
+    "mtime": 1781263252.6780462,
+    "ast_hash": "efc654131762dd27e029dc777b9169cc",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/stores/groupsStore.js": {
-    "mtime": 1780660608.8111567,
-    "ast_hash": "9118d7bb4d50803aa41d37a0dcc1853a",
+    "mtime": 1781106709.8701537,
+    "ast_hash": "7f86212d0173fa8306990586acc7b3fa",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/stores/rolesStore.js": {
@@ -340,8 +340,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/stores/usersStore.js": {
-    "mtime": 1780755922.389775,
-    "ast_hash": "059c3f5fe5683955ddbf5312ae222803",
+    "mtime": 1781194958.02092,
+    "ast_hash": "87498052825e5fc888e4bc6ad9ebfa35",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/utils/licenseLabel.js": {
@@ -355,8 +355,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/CreateUsersView.vue": {
-    "mtime": 1780500742.5077844,
-    "ast_hash": "322f8d786f302d0ea5be82138ccdf586",
+    "mtime": 1781263201.0784519,
+    "ast_hash": "6f879b5ae8fd02926840b381d1771947",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/DashboardView.vue": {
@@ -365,23 +365,23 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/DevicesView.vue": {
-    "mtime": 1780757716.016326,
-    "ast_hash": "4607a5cd641833171b4c20d6e26ac668",
+    "mtime": 1781263274.4592533,
+    "ast_hash": "58e8b8606172cd3cc72441920ea6a340",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/GroupsView.vue": {
-    "mtime": 1780500742.5105166,
-    "ast_hash": "db1f0160e507614c694ee889dffaafa9",
+    "mtime": 1781263158.6666636,
+    "ast_hash": "19e832db84f9a995e7f742e69962a177",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/RolesView.vue": {
-    "mtime": 1780660608.8113596,
-    "ast_hash": "d786c51ae205673c069b2fbcfc3781ea",
+    "mtime": 1781262874.992242,
+    "ast_hash": "26e3c5870a7613cd650722a7322e61d0",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/UsersView.vue": {
-    "mtime": 1780758203.838083,
-    "ast_hash": "2968f2727fd42fe2adf482241423f2e3",
+    "mtime": 1781262964.9065921,
+    "ast_hash": "27050a3d665e7ad8439af6a33452da13",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/vite.config.js": {
@@ -420,8 +420,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/README.md": {
-    "mtime": 1780502806.415921,
-    "ast_hash": "b590a54b3f86cc3584afa5e9712f6913",
+    "mtime": 1781263283.6819494,
+    "ast_hash": "035f7ac9081af4670473c3ffdb23bd3f",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/claude.md": {
@@ -470,8 +470,8 @@
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/Mg365-GraphModules.ps1": {
-    "mtime": 1780902601.5536323,
-    "ast_hash": "973ce4d7a022790745278fba22e32ccf",
+    "mtime": 1780993346.3491595,
+    "ast_hash": "1406bad6c3de6003fa4efb57f71cb189",
     "semantic_hash": ""
   },
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/icon.svg": {
@@ -482,6 +482,96 @@
   "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/public/icon.png": {
     "mtime": 1780903470.4113717,
     "ast_hash": "2f54f0af2e44888a135507d253d16627",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/backup-tenant.ps1": {
+    "mtime": 1781259143.815857,
+    "ast_hash": "87d509b03130c0466b5c519f2a33d7ac",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/create-group.ps1": {
+    "mtime": 1780928396.2586145,
+    "ast_hash": "57e8da401453ba2d5a87cab4f74f8409",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/delete-groups.ps1": {
+    "mtime": 1780995676.2440531,
+    "ast_hash": "2ac271fbde403a7f3f4ddce591f68f3a",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/deploy-intune-script.ps1": {
+    "mtime": 1781106654.0566254,
+    "ast_hash": "fba2880f934f4bdd68a75fec6cb26bcc",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/get-bitlocker-keys.ps1": {
+    "mtime": 1781105062.0060854,
+    "ast_hash": "47c68e7ca88c763450fcadd4be17fec9",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/get-intune-script-runstates.ps1": {
+    "mtime": 1781106668.7372227,
+    "ast_hash": "10c24c375b024e6ff2aefa2bbec6f95e",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/restore-tenant.ps1": {
+    "mtime": 1781259149.6486492,
+    "ast_hash": "21f94dd7667cd3e5914c816336eab7e8",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/samples/create-local-admin.ps1": {
+    "mtime": 1781106633.380636,
+    "ast_hash": "9d95b7ea09fd446d61e19816129cd0d1",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/set-department.ps1": {
+    "mtime": 1781194927.8751552,
+    "ast_hash": "7fd91ae827ef267a37480d99caee0dab",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/scripts/set-users-enabled.ps1": {
+    "mtime": 1780995650.508855,
+    "ast_hash": "cb6a8d814041612d332ab52cd08b291a",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/components/MultiSelectFilter.vue": {
+    "mtime": 1781258847.879443,
+    "ast_hash": "09d22fa98136ddf0546a0bc927cbfb57",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/stores/backupStore.js": {
+    "mtime": 1780934493.0507486,
+    "ast_hash": "e75ea68f30f6d2cd3f8592dd3d38f880",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/utils/upn.js": {
+    "mtime": 1781192638.7055025,
+    "ast_hash": "bffbd27ab380e0a9af27806026d8ba2e",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/BackupView.vue": {
+    "mtime": 1781263249.682202,
+    "ast_hash": "e7cb1b34626e610b9f14e168c9c6103a",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/CreateGroupView.vue": {
+    "mtime": 1780928238.5765796,
+    "ast_hash": "f35c6cf1aecf2e4d1564b007af3115a8",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/RemoveDevicesView.vue": {
+    "mtime": 1781263114.510057,
+    "ast_hash": "d82711677a19e88fc0f435f02ecdcb36",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/views/RemoveUsersView.vue": {
+    "mtime": 1781263092.1972086,
+    "ast_hash": "dd2c41bbbb6929b3970c2105a78ad578",
+    "semantic_hash": ""
+  },
+  "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Manager/src/utils/cancelPs.js": {
+    "mtime": 1781262846.5072067,
+    "ast_hash": "a30ad1e4dc05e1baecbc85821472ba35",
     "semantic_hash": ""
   }
 }

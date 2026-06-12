@@ -278,7 +278,7 @@
             <div v-if="confirmModal.error" class="mt-2" style="color:#f85149;font-size:0.83rem;">{{ confirmModal.error }}</div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="busy" @click="closeConfirmModal">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="busy ? cancelRunningPs() : closeConfirmModal()">{{ busy ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-danger btn-sm"
@@ -301,6 +301,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import managedDirectoryRoles from '../../config/managed-directory-roles.json'
+import { cancelRunningPs, resetPsCancel, psCancelRequested } from '../utils/cancelPs'
 
 const roleSortIndex = new Map(
   managedDirectoryRoles.map((entry, index) => [entry.templateId, index])
@@ -560,11 +561,13 @@ async function runAddMembers(userIds, roleTemplateId, { temporary, duration } = 
   const isTemporary = !!(temporary ?? addTemporary.value)
   const durationValue = duration ?? temporaryDuration.value
   const durationMs = durationMsForValue(durationValue)
+  resetPsCancel()
   busy.value = true
   let ok = 0
   let fail = 0
   const schedulePayload = []
   for (const uid of userIds) {
+    if (psCancelRequested.value) break
     const r = await rolesStore.addRoleMember({ roleTemplateId: tid, userId: uid })
     if (r) {
       ok++

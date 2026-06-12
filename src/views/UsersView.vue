@@ -43,18 +43,22 @@
             </select>
           </div>
           <div class="col-auto">
-            <select v-model="filterDept" class="form-select form-select-sm" style="min-width:130px;">
-              <option value="">Alle Abteilungen</option>
-              <option v-for="dept in departments" :key="dept" :value="dept">{{ dept }}</option>
-            </select>
+            <MultiSelectFilter
+              v-model="filterDepts"
+              v-model:invert="filterDeptsInvert"
+              :options="deptOptions"
+              placeholder="Alle Abteilungen"
+              searchable
+            />
           </div>
           <div class="col-auto">
-            <select v-model="filterLicenseSku" class="form-select form-select-sm" style="min-width:200px;">
-              <option value="">Alle Lizenzen</option>
-              <option v-for="sku in usersStore.licenses" :key="sku.skuId" :value="String(sku.skuId)">
-                {{ licenseLabel(sku.skuId) }}
-              </option>
-            </select>
+            <MultiSelectFilter
+              v-model="filterLicenseSkus"
+              v-model:invert="filterLicenseInvert"
+              :options="licenseOptions"
+              placeholder="Alle Lizenzen"
+              searchable
+            />
           </div>
           <div class="col-auto ms-auto">
             <span style="font-size:0.8rem;color:#8b949e;">{{ filteredUsers.length }} Treffer</span>
@@ -470,7 +474,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" @click="closeDelete" :disabled="deleteModal.saving">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="deleteModal.saving ? cancelRunningPs() : closeDelete()">{{ deleteModal.saving ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-danger btn-sm"
@@ -544,7 +548,7 @@
             <span v-if="groupPickerModal.selectedGroupId" class="me-auto small" style="color:#8b949e;">
               Gewählt: <strong style="color:#e6edf3;">{{ selectedGroupDisplayName }}</strong>
             </span>
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="groupPickerModal.running" @click="closeGroupPickerModal">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="groupPickerModal.running ? cancelRunningPs() : closeGroupPickerModal()">{{ groupPickerModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-primary btn-sm"
@@ -582,7 +586,7 @@
             </ul>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchMfaModal.running" @click="batchMfaModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchMfaModal.running ? cancelRunningPs() : (batchMfaModal.show = false)">{{ batchMfaModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-danger btn-sm" :disabled="batchMfaModal.running" @click="runBatchMfa">
               <i class="bi bi-shield-x me-1"></i>
               {{ batchMfaModal.running ? 'Wird ausgeführt...' : 'Für alle zurücksetzen' }}
@@ -615,7 +619,7 @@
             </ul>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchDeactivateModal.running" @click="batchDeactivateModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchDeactivateModal.running ? cancelRunningPs() : (batchDeactivateModal.show = false)">{{ batchDeactivateModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-danger btn-sm" :disabled="batchDeactivateModal.running" @click="runBatchDeactivate">
               {{ batchDeactivateModal.running ? 'Wird ausgeführt...' : 'Alle deaktivieren' }}
             </button>
@@ -647,7 +651,7 @@
             </ul>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchActivateModal.running" @click="batchActivateModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchActivateModal.running ? cancelRunningPs() : (batchActivateModal.show = false)">{{ batchActivateModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-success btn-sm" :disabled="batchActivateModal.running" @click="runBatchActivate">
               {{ batchActivateModal.running ? 'Wird ausgeführt...' : 'Alle aktivieren' }}
             </button>
@@ -678,7 +682,7 @@
             </ul>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchDeptModal.running" @click="batchDeptModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchDeptModal.running ? cancelRunningPs() : (batchDeptModal.show = false)">{{ batchDeptModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-primary btn-sm" :disabled="batchDeptModal.running || !batchDeptModal.value.trim()" @click="runBatchSetDept">
               {{ batchDeptModal.running ? 'Wird ausgeführt...' : 'Abteilung setzen' }}
             </button>
@@ -716,7 +720,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchDeleteModal.running" @click="closeBatchDelete">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchDeleteModal.running ? cancelRunningPs() : closeBatchDelete()">{{ batchDeleteModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-danger btn-sm"
@@ -739,8 +743,10 @@ import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import { useGroupsStore } from '../stores/groupsStore'
 import PasswordInput from '../components/PasswordInput.vue'
+import MultiSelectFilter from '../components/MultiSelectFilter.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
 import { humanLicenseLabel } from '../utils/licenseLabel.js'
+import { cancelRunningPs, resetPsCancel, psCancelRequested } from '../utils/cancelPs'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
@@ -752,8 +758,10 @@ const assignableGroups = computed(() => groupsStore.groups.filter((g) => !g.isDy
 // ---- Filters & Sorting ----
 const searchQuery = ref('')
 const filterStatus = ref('all')
-const filterDept = ref('')
-const filterLicenseSku = ref('')
+const filterDepts = ref([])
+const filterDeptsInvert = ref(false)
+const filterLicenseSkus = ref([])
+const filterLicenseInvert = ref(false)
 const sortKey = ref('displayName')
 const sortDir = ref(1) // 1 = asc, -1 = desc
 const currentPage = ref(1)
@@ -763,6 +771,18 @@ const pageSize = ref(50)
 const departments = computed(() => {
   const depts = new Set(usersStore.users.map(u => u.department).filter(Boolean))
   return [...depts].sort()
+})
+// Optionen für MultiSelectFilter ({ value, label }); '__none__' = Benutzer ohne Abteilung.
+const deptOptions = computed(() => {
+  const opts = departments.value.map((d) => ({ value: d, label: d }))
+  if (usersStore.users.some((u) => !u.department)) opts.push({ value: '__none__', label: '(ohne Abteilung)' })
+  return opts
+})
+// '__none__' = Benutzer ohne zugewiesene Lizenz.
+const licenseOptions = computed(() => {
+  const opts = usersStore.licenses.map((sku) => ({ value: String(sku.skuId), label: licenseLabel(sku.skuId) }))
+  if (usersStore.users.some((u) => !(u.assignedLicenses || []).length)) opts.push({ value: '__none__', label: '(ohne Lizenz)' })
+  return opts
 })
 
 const filteredUsers = computed(() => {
@@ -778,12 +798,22 @@ const filteredUsers = computed(() => {
   }
   if (filterStatus.value === 'active') list = list.filter(u => u.accountEnabled)
   if (filterStatus.value === 'inactive') list = list.filter(u => !u.accountEnabled)
-  if (filterDept.value) list = list.filter(u => u.department === filterDept.value)
-  if (filterLicenseSku.value) {
-    const want = String(filterLicenseSku.value)
-    list = list.filter((u) =>
-      (u.assignedLicenses || []).some((l) => String(l.skuId) === want)
-    )
+  if (filterDepts.value.length) {
+    const want = new Set(filterDepts.value)
+    const wantNone = want.has('__none__')
+    list = list.filter((u) => {
+      const match = (wantNone && !u.department) || want.has(u.department)
+      return filterDeptsInvert.value ? !match : match
+    })
+  }
+  if (filterLicenseSkus.value.length) {
+    const want = new Set(filterLicenseSkus.value)
+    const wantNone = want.has('__none__')
+    list = list.filter((u) => {
+      const licenses = u.assignedLicenses || []
+      const match = (wantNone && !licenses.length) || licenses.some((l) => want.has(String(l.skuId)))
+      return filterLicenseInvert.value ? !match : match
+    })
   }
 
   return [...list].sort((a, b) => {
@@ -810,7 +840,7 @@ const paginatedUsers = computed(() => {
   return filteredUsers.value.slice(start, start + ps)
 })
 
-watch([filterStatus, filterDept, filterLicenseSku], () => {
+watch([filterStatus, filterDepts, filterDeptsInvert, filterLicenseSkus, filterLicenseInvert], () => {
   currentPage.value = 1
 })
 
@@ -1015,10 +1045,12 @@ function closeBatchDelete() {
 }
 
 async function runBatchMfa() {
+  resetPsCancel()
   batchMfaModal.running = true
   let ok = 0
   let fail = 0
   for (const t of batchMfaModal.targets) {
+    if (psCancelRequested.value) break
     const r = await usersStore.resetMfa(t.userPrincipalName, { quietToast: true })
     if (r) ok++
     else fail++

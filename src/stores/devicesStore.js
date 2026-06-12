@@ -3,6 +3,7 @@
 
 import { defineStore } from 'pinia'
 import { useAuthStore } from './authStore'
+import { psCancelRequested } from '../utils/cancelPs'
 
 let devicesInflight = null
 
@@ -141,6 +142,17 @@ export const useDevicesStore = defineStore('devices', {
       }
     },
 
+    // Fetches Windows LAPS local admin credentials from Entra (by azureADDeviceId).
+    async fetchLapsCredentials(azureAdDeviceId) {
+      const id = String(azureAdDeviceId || '').trim()
+      if (!id) return { status: 'error', message: 'azureAdDeviceId erforderlich', credentials: [], hasLaps: false }
+      try {
+        return await window.ipcRenderer.invoke('get-laps-credentials', { azureAdDeviceId: id })
+      } catch (e) {
+        return { status: 'error', message: e.message, credentials: [], hasLaps: false }
+      }
+    },
+
     async wipeIntuneDevice({ azureAdDeviceId, intuneManagedDeviceId }) {
       const auth = useAuthStore()
       try {
@@ -170,6 +182,7 @@ export const useDevicesStore = defineStore('devices', {
       let partial = 0
       let fail = 0
       for (const row of rows) {
+        if (psCancelRequested.value) break
         const label = row.displayName || row.id
         try {
           const result = await window.ipcRenderer.invoke('retire-intune-device', {
@@ -213,6 +226,7 @@ export const useDevicesStore = defineStore('devices', {
       let ok = 0
       let fail = 0
       for (const row of rows) {
+        if (psCancelRequested.value) break
         const label = row.displayName || row.id
         try {
           // Intune-Geräte zuerst sauber aus dem Management lösen

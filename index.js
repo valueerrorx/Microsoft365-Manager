@@ -596,7 +596,8 @@ const PARALLEL_PS_SCRIPTS = new Set([
   'scripts/get-group-members.ps1',
   'scripts/group-lifecycle.ps1',
   'scripts/backup-tenant.ps1',
-  'scripts/get-bitlocker-keys.ps1'
+  'scripts/get-bitlocker-keys.ps1',
+  'scripts/get-laps-credentials.ps1'
 ])
 
 let psScriptQueueTail = Promise.resolve()
@@ -1099,6 +1100,14 @@ ipcMain.handle('request-app-close', async () => {
 
 ipcMain.handle('get-device-login-code', async () => ({ code: pendingDeviceLoginCode }))
 
+// Abbrechen: killt alle app-eigenen pwsh-Kinder (inkl. verschachtelte Prozessbäume).
+// Warme Graph-Console bleibt erhalten, weiterarbeiten ist sofort möglich.
+ipcMain.handle('cancel-all-ps', async () => {
+  await killAllPsProcesses()
+  authLogUi('Aktion abgebrochen.', 'warning')
+  return { ok: true }
+})
+
 async function performDisconnectMg365({ notifyUi = true } = {}) {
   authDebug('disconnect-ms365', { graphSessionWarm: false })
   await killAllPsProcesses()
@@ -1547,7 +1556,8 @@ ipcMain.handle('open-backup-dialog', async () => {
     const counts = {
       users: Array.isArray(cats.users) ? cats.users.length : 0,
       groups: Array.isArray(cats.groups) ? cats.groups.length : 0,
-      roles: Array.isArray(cats.roles) ? cats.roles.length : 0
+      roles: Array.isArray(cats.roles) ? cats.roles.length : 0,
+      intunePolicies: Array.isArray(cats.intunePolicies) ? cats.intunePolicies.length : 0
     }
     return {
       status: 'ok',
@@ -1830,6 +1840,22 @@ ipcMain.handle('get-bitlocker-keys', async (_event, body = {}) => {
     return data
   } catch (e) {
     return { status: 'error', message: e?.message, keys: [] }
+  }
+})
+
+ipcMain.handle('get-laps-credentials', async (_event, body = {}) => {
+  try {
+    const azureAdDeviceId = String(body?.azureAdDeviceId || '').trim()
+    if (!azureAdDeviceId) return { status: 'error', message: 'azureAdDeviceId erforderlich', credentials: [], hasLaps: false }
+    const result = await runPsScript('scripts/get-laps-credentials.ps1', ['-AzureAdDeviceId', azureAdDeviceId], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { status: 'error', message: result.stderr || 'Keine Antwort von PowerShell.', credentials: [], hasLaps: false }
+    uiSend('ps-operation-complete', { status: data.status })
+    return data
+  } catch (e) {
+    return { status: 'error', message: e?.message, credentials: [], hasLaps: false }
   }
 })
 

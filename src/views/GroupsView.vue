@@ -285,7 +285,7 @@
             </p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="bulkLifecycleModal.running" @click="bulkLifecycleModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="bulkLifecycleModal.running ? cancelRunningPs() : (bulkLifecycleModal.show = false)">{{ bulkLifecycleModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-primary btn-sm" :disabled="bulkLifecycleModal.running || !bulkLifecycleM365Ids.length" @click="runBulkLifecycleAdd">
               {{ bulkLifecycleModal.running ? 'Fügt hinzu…' : 'Hinzufügen' }}
             </button>
@@ -359,7 +359,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="editModal.saving" @click="editModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="editModal.saving ? cancelRunningPs() : (editModal.show = false)">{{ editModal.saving ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-primary btn-sm" :disabled="editModal.saving || !editForm.displayName.trim()" @click="saveEditGroup">
               {{ editModal.saving ? 'Speichert...' : 'Speichern' }}
             </button>
@@ -382,7 +382,7 @@
             <input v-model="deleteModal.confirmName" type="text" class="form-control" :disabled="deleteModal.saving" />
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="deleteModal.saving" @click="deleteModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="deleteModal.saving ? cancelRunningPs() : (deleteModal.show = false)">{{ deleteModal.saving ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-danger btn-sm"
@@ -417,7 +417,7 @@
             <input v-model="batchDeleteModal.confirmText" type="text" class="form-control" :disabled="batchDeleteModal.running" />
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchDeleteModal.running" @click="batchDeleteModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchDeleteModal.running ? cancelRunningPs() : (batchDeleteModal.show = false)">{{ batchDeleteModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-danger btn-sm"
@@ -612,6 +612,7 @@
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useGroupsStore } from '../stores/groupsStore'
 import { useUsersStore } from '../stores/usersStore'
+import { cancelRunningPs } from '../utils/cancelPs'
 
 const groupsStore = useGroupsStore()
 const usersStore = useUsersStore()

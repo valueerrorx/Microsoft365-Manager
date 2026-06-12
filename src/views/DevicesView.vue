@@ -29,13 +29,12 @@
             </div>
           </div>
           <div class="col-6 col-md-2 col-lg-2">
-            <select v-model="filterTrust" class="form-select form-select-sm" aria-label="Verknüpfungstyp filtern">
-              <option value="all">Alle Verknüpfungen</option>
-              <option value="AzureAd">Entra gejoint</option>
-              <option value="Workplace">Entra registriert</option>
-              <option value="ServerAd">Hybrid</option>
-              <option value="other">Sonstige / leer</option>
-            </select>
+            <MultiSelectFilter
+              v-model="filterTrusts"
+              v-model:invert="filterTrustsInvert"
+              :options="trustOptions"
+              placeholder="Alle Verknüpfungen"
+            />
           </div>
           <div class="col-6 col-md-2 col-lg-2">
             <select v-model="filterEnabled" class="form-select form-select-sm" aria-label="Aktiviert filtern">
@@ -53,11 +52,13 @@
             </select>
           </div>
           <div class="col-6 col-md-3 col-lg-2">
-            <select v-model="filterLicense" class="form-select form-select-sm" aria-label="Lizenz des Besitzers filtern">
-              <option value="all">Lizenz Besitzer: alle</option>
-              <option value="none">Ohne Lizenz / kein Besitzer</option>
-              <option v-for="o in ownerLicenseOptions" :key="o.skuId" :value="o.skuId">{{ o.label }}</option>
-            </select>
+            <MultiSelectFilter
+              v-model="filterLicenseSkus"
+              v-model:invert="filterLicenseInvert"
+              :options="licenseFilterOptions"
+              placeholder="Lizenz Besitzer: alle"
+              searchable
+            />
           </div>
           <div class="col-auto ms-md-auto">
             <span style="font-size:0.8rem;color:#8b949e;">{{ filteredDevices.length }} Treffer</span>
@@ -203,6 +204,14 @@
                   <button
                     type="button"
                     class="btn-action"
+                    title="LAPS lokales Admin-Passwort anzeigen"
+                    @click="openLapsModal(d)"
+                  >
+                    <i class="bi bi-shield-lock"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-action"
                     :title="d.isIntuneManaged ? 'Abkoppeln (Intune Retire)' : 'Nur für in Intune eingeschriebene Geräte'"
                     :disabled="!d.isIntuneManaged"
                     @click="openRetireModal(d)"
@@ -287,7 +296,7 @@
             </p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="bulkRetireModal.running" @click="bulkRetireModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="bulkRetireModal.running ? cancelRunningPs() : (bulkRetireModal.show = false)">{{ bulkRetireModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-primary btn-sm" :disabled="bulkRetireModal.running" @click="runBulkRetire">
               {{ bulkRetireModal.running ? 'Wird ausgeführt…' : 'Alle abkoppeln' }}
             </button>
@@ -322,7 +331,7 @@
             </p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="retireModal.running" @click="retireModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="retireModal.running ? cancelRunningPs() : (retireModal.show = false)">{{ retireModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button type="button" class="btn btn-primary btn-sm" :disabled="retireModal.running" @click="runRetire">
               {{ retireModal.running ? 'Wird ausgeführt…' : 'Abkoppeln' }}
             </button>
@@ -354,7 +363,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="deleteEntraModal.running" @click="closeDeleteEntraModal">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="deleteEntraModal.running ? cancelRunningPs() : closeDeleteEntraModal()">{{ deleteEntraModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-danger btn-sm"
@@ -385,7 +394,7 @@
             <input v-model="wipeModal.confirmName" type="text" class="form-control" :disabled="wipeModal.running" autocomplete="off" />
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="wipeModal.running" @click="wipeModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="wipeModal.running ? cancelRunningPs() : (wipeModal.show = false)">{{ wipeModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-danger btn-sm"
@@ -394,6 +403,57 @@
             >
               {{ wipeModal.running ? 'Wipe wird ausgelöst…' : 'Wipe auslösen' }}
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAPS Local Admin Password -->
+    <div v-if="lapsModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-shield-lock me-2" style="color:#58a6ff;"></i>
+              LAPS Admin: {{ lapsModal.device?.displayName || lapsModal.deviceName || lapsModal.device?.id }}
+            </h5>
+            <button type="button" class="btn-close" @click="lapsModal.show = false"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="lapsModal.loading" class="text-center py-4 text-secondary small">
+              <div class="spinner-border spinner-border-sm me-2" style="color:#58a6ff;"></div>
+              Passwort wird geladen…
+            </div>
+            <div v-else-if="lapsModal.error" class="alert alert-danger small mb-0">{{ lapsModal.error }}</div>
+            <div v-else-if="!lapsModal.credentials.length" class="py-3 text-center small text-secondary">
+              {{ lapsModal.emptyMessage || 'Kein LAPS-Passwort in Entra für dieses Gerät gespeichert.' }}
+            </div>
+            <div v-else>
+              <div v-if="lapsModal.lastBackupDateTime" class="small text-secondary mb-2">
+                Letztes Backup: {{ formatDeviceDateTime(lapsModal.lastBackupDateTime) }}
+              </div>
+              <div
+                v-for="(c, idx) in lapsModal.credentials"
+                :key="`${c.accountName}-${c.backupDateTime}-${idx}`"
+                class="mb-2 p-2 rounded"
+                style="background:rgba(0,0,0,0.2);border:1px solid #30363d;"
+              >
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="small text-secondary">
+                    {{ c.accountName || 'Administrator' }}
+                    <span v-if="c.isCurrent" class="badge rounded-pill ms-1" style="background:#238636;color:#fff;font-size:0.65rem;">Aktuell</span>
+                    <span v-else class="ms-1">· {{ formatDeviceDateTime(c.backupDateTime) }}</span>
+                  </span>
+                  <button type="button" class="btn btn-link btn-sm p-0" title="Passwort kopieren" @click="copyKey(c.password)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+                <code style="font-size:0.85rem;color:#e6edf3;word-break:break-all;">{{ c.password || '— (Wert nicht abrufbar)' }}</code>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" @click="lapsModal.show = false">Schließen</button>
           </div>
         </div>
       </div>
@@ -504,7 +564,7 @@
             <span v-if="groupPickerModal.selectedGroupId" class="me-auto small" style="color:#8b949e;">
               Gewählt: <strong style="color:#e6edf3;">{{ selectedGroupDisplayName }}</strong>
             </span>
-            <button type="button" class="btn btn-secondary btn-sm" :disabled="groupPickerModal.running" @click="closeGroupPickerModal">Abbrechen</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="groupPickerModal.running ? cancelRunningPs() : closeGroupPickerModal()">{{ groupPickerModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
             <button
               type="button"
               class="btn btn-primary btn-sm"
@@ -526,6 +586,8 @@ import { useDevicesStore } from '../stores/devicesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { useGroupsStore } from '../stores/groupsStore'
 import { humanLicenseLabel } from '../utils/licenseLabel.js'
+import MultiSelectFilter from '../components/MultiSelectFilter.vue'
+import { cancelRunningPs, resetPsCancel } from '../utils/cancelPs'
 
 const devicesStore = useDevicesStore()
 const usersStore = useUsersStore()
@@ -539,6 +601,7 @@ const bulkRetireModal = reactive({ show: false, disableUserAccount: false, runni
 const wipeModal = reactive({ show: false, device: null, confirmName: '', running: false })
 const deleteEntraModal = reactive({ show: false, device: null, confirmName: '', running: false, error: '' })
 const bitlockerModal = reactive({ show: false, device: null, loading: false, keys: [], error: '' })
+const lapsModal = reactive({ show: false, device: null, deviceName: '', loading: false, credentials: [], lastBackupDateTime: '', emptyMessage: '', error: '' })
 
 const selectedDeviceIds = ref([])
 
@@ -549,10 +612,20 @@ const selectedIntuneDeviceRows = computed(() =>
 )
 
 const searchQuery = ref('')
-const filterTrust = ref('all')
+const filterTrusts = ref([])
+const filterTrustsInvert = ref(false)
 const filterEnabled = ref('all')
 const filterCompliant = ref('all')
-const filterLicense = ref('all') // skuId des Gerätebesitzers, 'all', 'none' (kein/unlizenzierter Besitzer)
+const filterLicenseSkus = ref([]) // skuIds des Gerätebesitzers + 'none' (kein/unlizenzierter Besitzer)
+const filterLicenseInvert = ref(false)
+
+// Feste Verknüpfungstyp-Optionen ('other' = sonstige/leer).
+const trustOptions = [
+  { value: 'AzureAd', label: 'Entra gejoint' },
+  { value: 'Workplace', label: 'Entra registriert' },
+  { value: 'ServerAd', label: 'Hybrid' },
+  { value: 'other', label: 'Sonstige / leer' }
+]
 
 // UPN (lowercase) -> User-Objekt (für Besitzer-Lizenz und -Name)
 const userByUpn = computed(() => {
@@ -591,6 +664,11 @@ const ownerLicenseOptions = computed(() => {
     .map((id) => ({ skuId: id, label: humanLicenseLabel(usersStore.licenseMap[id]?.skuPartNumber) || id }))
     .sort((a, b) => a.label.localeCompare(b.label))
 })
+// Optionen für MultiSelectFilter: 'none' (kein/unlizenzierter Besitzer) + alle vorkommenden SKUs.
+const licenseFilterOptions = computed(() => [
+  { value: 'none', label: 'Ohne Lizenz / kein Besitzer' },
+  ...ownerLicenseOptions.value.map((o) => ({ value: o.skuId, label: o.label }))
+])
 const sortKey = ref('displayName')
 const sortDir = ref(1)
 const currentPage = ref(1)
@@ -613,12 +691,13 @@ const filteredDevices = computed(() => {
         (d.managementLabel || '').toLowerCase().includes(q)
     )
   }
-  const ft = filterTrust.value
-  if (ft !== 'all') {
+  if (filterTrusts.value.length) {
+    const want = new Set(filterTrusts.value)
     list = list.filter((d) => {
       const t = d.trustType || ''
-      if (ft === 'other') return !t || !['AzureAd', 'Workplace', 'ServerAd'].includes(t)
-      return t === ft
+      const isOther = !t || !['AzureAd', 'Workplace', 'ServerAd'].includes(t)
+      const match = want.has(t) || (isOther && want.has('other'))
+      return filterTrustsInvert.value ? !match : match
     })
   }
   const fe = filterEnabled.value
@@ -628,13 +707,16 @@ const filteredDevices = computed(() => {
   if (fc === 'yes') list = list.filter((d) => d.isCompliant === true)
   if (fc === 'no') list = list.filter((d) => d.isCompliant === false)
   if (fc === 'unknown') list = list.filter((d) => d.isCompliant !== true && d.isCompliant !== false)
-  const fl = filterLicense.value
-  if (fl !== 'all') {
+  if (filterLicenseSkus.value.length) {
+    const want = new Set(filterLicenseSkus.value)
+    const wantNone = want.has('none')
     list = list.filter((d) => {
       const upn = String(d.ownerUserPrincipalName || '').toLowerCase()
       const skus = upn ? ownerSkuMap.value[upn] : null
-      if (fl === 'none') return !skus || skus.size === 0
-      return !!skus && skus.has(fl)
+      const noneMatch = wantNone && (!skus || skus.size === 0)
+      const skuMatch = !!skus && [...skus].some((id) => want.has(id))
+      const match = noneMatch || skuMatch
+      return filterLicenseInvert.value ? !match : match
     })
   }
 
@@ -717,6 +799,7 @@ async function runBulkRetire() {
     bulkRetireModal.show = false
     return
   }
+  resetPsCancel()
   bulkRetireModal.running = true
   await devicesStore.retireIntuneDevicesBatch(rows, bulkRetireModal.disableUserAccount)
   bulkRetireModal.running = false
@@ -739,7 +822,7 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 
-watch([filterTrust, filterEnabled, filterCompliant, filterLicense], () => {
+watch([filterTrusts, filterTrustsInvert, filterEnabled, filterCompliant, filterLicenseSkus, filterLicenseInvert], () => {
   currentPage.value = 1
 })
 
@@ -873,6 +956,32 @@ async function openBitlockerModal(d) {
     bitlockerModal.keys = res.keys || []
   } else {
     bitlockerModal.error = res.message || 'Schlüssel konnten nicht geladen werden.'
+  }
+}
+
+async function openLapsModal(d) {
+  lapsModal.device = d
+  lapsModal.deviceName = ''
+  lapsModal.credentials = []
+  lapsModal.lastBackupDateTime = ''
+  lapsModal.emptyMessage = ''
+  lapsModal.error = ''
+  lapsModal.show = true
+  const azureAdDeviceId = d.deviceId
+  if (!azureAdDeviceId) {
+    lapsModal.error = 'Keine Entra deviceId für dieses Gerät verfügbar.'
+    return
+  }
+  lapsModal.loading = true
+  const res = await devicesStore.fetchLapsCredentials(azureAdDeviceId)
+  lapsModal.loading = false
+  if (res.status === 'ok') {
+    lapsModal.deviceName = res.deviceName || ''
+    lapsModal.lastBackupDateTime = res.lastBackupDateTime || ''
+    lapsModal.credentials = res.credentials || []
+    lapsModal.emptyMessage = res.message || ''
+  } else {
+    lapsModal.error = res.message || 'LAPS-Passwort konnte nicht geladen werden.'
   }
 }
 

@@ -1,16 +1,16 @@
-# Graph Report - Microsoft365-Manager  (2026-06-08)
+# Graph Report - Microsoft365-Manager  (2026-06-12)
 
 ## Corpus Check
-- 62 files · ~54,437 words
+- 80 files · ~73,703 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 597 nodes · 632 edges · 109 communities (87 shown, 22 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.8)
+- 722 nodes · 811 edges · 127 communities (101 shown, 26 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4a502fdb`
+- Built from commit: `eac9af9a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -56,35 +56,44 @@
 - [[_COMMUNITY_Community 84|Community 84]]
 - [[_COMMUNITY_Community 86|Community 86]]
 - [[_COMMUNITY_Community 89|Community 89]]
+- [[_COMMUNITY_Community 109|Community 109]]
+- [[_COMMUNITY_Community 110|Community 110]]
+- [[_COMMUNITY_Community 111|Community 111]]
+- [[_COMMUNITY_Community 112|Community 112]]
+- [[_COMMUNITY_Community 113|Community 113]]
+- [[_COMMUNITY_Community 115|Community 115]]
+- [[_COMMUNITY_Community 116|Community 116]]
+- [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 126|Community 126]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `MS-365 Benutzer-Verwaltungs Tool` - 13 edges
+1. `performDisconnectMg365()` - 14 edges
 2. `MS-365 Benutzer-Verwaltungs Tool` - 13 edges
-3. `build` - 12 edges
-4. `Project: MS-365 User Management Dashboard (Electron + Vue + PowerShell/Graph)` - 12 edges
+3. `MS-365 Benutzer-Verwaltungs Tool` - 13 edges
+4. `build` - 12 edges
 5. `Project: MS-365 User Management Dashboard (Electron + Vue + PowerShell/Graph)` - 12 edges
-6. `resetAllDataStores()` - 10 edges
-7. `authDebug()` - 9 edges
-8. `runPsScriptBody()` - 9 edges
-9. `scripts` - 9 edges
-10. `linux` - 9 edges
+6. `Project: MS-365 User Management Dashboard (Electron + Vue + PowerShell/Graph)` - 12 edges
+7. `authDebug()` - 10 edges
+8. `runPsScriptBody()` - 10 edges
+9. `useAuthStore` - 10 edges
+10. `resetAllDataStores()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `performDisconnectMg365()` --calls--> `resetGraphCredential()`  [INFERRED]
+  index.js → graph-device-auth.mjs
+- `performDisconnectMg365()` --calls--> `deletePersistedGraphAuth()`  [INFERRED]
+  index.js → graph-device-auth.mjs
 - `Connect-Mg365App()` --calls--> `Ensure-Mg365GraphModule()`  [INFERRED]
   scripts/Connect-Mg365App.ps1 → scripts/Mg365-GraphModules.ps1
 - `resetAllDataStores()` --calls--> `useDevicesStore`  [INFERRED]
   src/stores/sessionReset.js → src/stores/devicesStore.js
 - `resetAllDataStores()` --calls--> `useGroupsStore`  [INFERRED]
   src/stores/sessionReset.js → src/stores/groupsStore.js
-- `resetAllDataStores()` --calls--> `useRolesStore`  [INFERRED]
-  src/stores/sessionReset.js → src/stores/rolesStore.js
-- `resetAllDataStores()` --calls--> `useUsersStore`  [INFERRED]
-  src/stores/sessionReset.js → src/stores/usersStore.js
 
 ## Import Cycles
+- 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/rolesStore.js -> src/stores/authStore.js`
 - 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/devicesStore.js -> src/stores/authStore.js`
 - 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/groupsStore.js -> src/stores/authStore.js`
-- 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/rolesStore.js -> src/stores/authStore.js`
 - 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/usersStore.js -> src/stores/authStore.js`
 
 ## Hyperedges (group relationships)
@@ -95,11 +104,11 @@
 - **Pinia Store Coordination: usersStore calls authStore for logging and toast notifications on every IPC action** — usersstore_usersstore, authstore_authstore, authstore_logs [EXTRACTED 0.98]
 - **License Display Pipeline: usersStore.licenseMap + humanLicenseLabel → UsersView badges & DashboardView bars** — usersstore_getters, licenselabel_humanlicenselabel, dashboardview_licenseoverview [INFERRED 0.88]
 
-## Communities (109 total, 22 thin omitted)
+## Communities (127 total, 26 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.07
-Nodes (51): ALLOWED_MS_ADMIN_HOSTS, authDebug(), authLogUi(), buildPsScriptEnv(), buildPsSpawnOptions(), checkPwshForDashboard(), copyPsHelperScripts(), createTray() (+43 more)
+Cohesion: 0.06
+Nodes (61): activePsProcesses, ALLOWED_MS_ADMIN_HOSTS, authDebug(), authLogUi(), buildPsScriptEnv(), buildPsSpawnOptions(), checkPwshForDashboard(), clearLegacyGraphPsCacheFiles() (+53 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.48
@@ -110,12 +119,12 @@ Cohesion: 0.32
 Nodes (4): createSingleUser(), entryError(), entryUpn(), normalizeForUPN()
 
 ### Community 49 - "Community 49"
-Cohesion: 0.07
-Nodes (29): 1. Verbindung herstellen / Daten laden, 2. Benutzer verwalten (Benutzerliste), 3. Gruppen verwalten, 4. Geräte und Intune-Aktionen, 5. Neue Benutzer anlegen (Einzeln oder CSV), 6. Logs anzeigen, ANSI-Escape-Codes in den Logs, Architektur (+21 more)
+Cohesion: 0.06
+Nodes (39): 1. Verbindung herstellen / Daten laden, 2. Benutzer verwalten (Benutzerliste), 3. Gruppen verwalten, 4. Geräte und Intune-Aktionen, 5. Neue Benutzer anlegen (Einzeln oder CSV), 6. Logs anzeigen, Aktionen, ANSI-Escape-Codes in den Logs (+31 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.10
-Nodes (20): useAuthStore, useDevicesStore, useGroupsStore, useRolesStore, resetAllDataStores(), useUsersStore, a3LicenseBucket(), humanLicenseLabel() (+12 more)
+Cohesion: 0.08
+Nodes (24): useAuthStore, useDevicesStore, useGroupsStore, useRolesStore, resetAllDataStores(), useUsersStore, a3LicenseBucket(), humanLicenseLabel() (+16 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.05
@@ -127,19 +136,19 @@ Nodes (22): Architektur & Datenfluss, CSV / UPN Normalisierung: wichtige Stelle,
 
 ### Community 53 - "Community 53"
 Cohesion: 0.06
-Nodes (32): author, dependencies, @azure/identity, bootstrap, bootstrap-icons, pinia, vue, vue-router (+24 more)
+Nodes (33): author, dependencies, @azure/identity, @azure/identity-cache-persistence, bootstrap, bootstrap-icons, pinia, vue (+25 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.08
-Nodes (15): routes, app, strengthColors, strengthLabels, validatePassword(), authStore, createSingleUser(), entryError() (+7 more)
+Cohesion: 0.15
+Nodes (10): authStore, createSingleUser(), entryError(), entryUpn(), normalizeForUPN(), pwValid, singleForm, singlePreview (+2 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.07
 Nodes (29): 1. Verbindung herstellen / Daten laden, 2. Benutzer verwalten (Benutzerliste), 3. Gruppen verwalten, 4. Geräte und Intune-Aktionen, 5. Neue Benutzer anlegen (Einzeln oder CSV), 6. Logs anzeigen, ANSI-Escape-Codes in den Logs, Architektur (+21 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.07
-Nodes (35): addTemporary, addUserIds, addUserSearch, authStore, busy, confirmActionEnabled, confirmModal, durationLabelForValue() (+27 more)
+Cohesion: 0.06
+Nodes (36): resetPsCancel(), addTemporary, addUserIds, addUserSearch, authStore, busy, confirmActionEnabled, confirmModal (+28 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.09
@@ -157,13 +166,17 @@ Nodes (14): 0. Compact replies (token budget), 1. Think Before Coding, 2. Simpli
 Cohesion: 0.40
 Nodes (3): permissions, allow, deny
 
+### Community 62 - "Community 62"
+Cohesion: 0.29
+Nodes (12): authRecordPath(), buildCredential(), deletePersistedGraphAuth(), getGraphDelegatedToken(), GRAPH_DELEGATED_SCOPES, loadAuthRecord(), registerPersistence(), resetGraphCredential() (+4 more)
+
 ### Community 67 - "Community 67"
 Cohesion: 0.32
 Nodes (10): Connect-Mg365App(), Connect-Mg365InteractiveBrowser(), Ensure-WamConsoleWindow(), Get-Mg365MsalAssemblyPath(), Get-Ms365ParentWindowHandle(), Register-Mg365MsalCache(), Save-Mg365AuthRecord(), Write-Mg365AuthLog() (+2 more)
 
 ### Community 74 - "Community 74"
-Cohesion: 0.05
-Nodes (23): allPageDevicesSelected, clearDeviceSelection(), currentPage, deleteEntraConfirmExpected, deleteEntraConfirmLabel, deviceConfirmTarget(), filterCompliant, filteredDevices (+15 more)
+Cohesion: 0.03
+Nodes (40): allPageDevicesSelected, bitlockerModal, bulkRetireModal, currentPage, deleteEntraConfirmExpected, deleteEntraConfirmLabel, deleteEntraModal, filterCompliant (+32 more)
 
 ### Community 78 - "Community 78"
 Cohesion: 0.20
@@ -173,25 +186,41 @@ Nodes (5): canLogout, devicesStore, groupsStore, rolesStore, usersStore
 Cohesion: 0.67
 Nodes (4): Get-ActivatedDirectoryRoleByTemplateId(), Get-DirectoryRoleUserMembers(), Get-OrActivateDirectoryRole(), New-DirectoryRoleFromTemplate()
 
+### Community 109 - "Community 109"
+Cohesion: 0.12
+Nodes (12): useBackupStore, anyRestoreSelected, anySelected, authStore, backupStore, preview, pwValid, rsel (+4 more)
+
+### Community 112 - "Community 112"
+Cohesion: 0.60
+Nodes (3): Get-GraphAll(), Get-IntuneAssignmentTargets(), Resolve-GroupMailNickname()
+
+### Community 113 - "Community 113"
+Cohesion: 0.50
+Nodes (3): strengthColors, strengthLabels, validatePassword()
+
+### Community 116 - "Community 116"
+Cohesion: 0.67
+Nodes (3): clearDeviceSelection(), runAddDevicesToGroup(), runBulkRetire()
+
 ## Knowledge Gaps
-- **265 isolated node(s):** `allow`, `allow`, `deny`, `GRAPH_DELEGATED_SCOPES`, `__filename` (+260 more)
+- **308 isolated node(s):** `allow`, `allow`, `deny`, `GRAPH_DELEGATED_SCOPES`, `__filename` (+303 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **22 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `build` connect `Community 51` to `Community 53`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+- **Why does `performDisconnectMg365()` connect `Community 0` to `Community 62`?**
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
+- **Why does `useAuthStore` connect `Community 50` to `Community 57`, `Community 109`, `Community 54`?**
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
+- **Are the 2 inferred relationships involving `performDisconnectMg365()` (e.g. with `deletePersistedGraphAuth()` and `resetGraphCredential()`) actually correct?**
+  _`performDisconnectMg365()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `allow`, `allow`, `deny` to the rest of the system?**
-  _265 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _308 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.07130333138515488 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06128364389233954 - nodes in this community are weakly interconnected._
 - **Should `Community 49` be split into smaller, more focused modules?**
-  _Cohesion score 0.06666666666666667 - nodes in this community are weakly interconnected._
-- **Should `Community 50` be split into smaller, more focused modules?**
-  _Cohesion score 0.10252100840336134 - nodes in this community are weakly interconnected._
-- **Should `Community 51` be split into smaller, more focused modules?**
-  _Cohesion score 0.046511627906976744 - nodes in this community are weakly interconnected._
-- **Should `Community 52` be split into smaller, more focused modules?**
-  _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05641025641025641 - nodes in this community are weakly interconnected._

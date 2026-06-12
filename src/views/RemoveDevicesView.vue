@@ -37,6 +37,9 @@ Anna;Schmidt</pre>
                             zugeordneten Geräte entfernt: Intune-verwaltete werden abgekoppelt (Retire), reine
                             Entra-Geräte aus dem Verzeichnis gelöscht.
                         </div>
+                        <a :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+                            <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
+                        </a>
                     </div>
                 </div>
 
@@ -170,7 +173,7 @@ Anna;Schmidt</pre>
                         <input v-model="confirm.text" type="text" class="form-control" style="font-family:monospace;" :disabled="running" />
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btn-sm" :disabled="running" @click="confirm.show = false">Abbrechen</button>
+                        <button type="button" class="btn btn-secondary btn-sm" @click="running ? cancelRunningPs() : (confirm.show = false)">{{ running ? 'Stoppen' : 'Abbrechen' }}</button>
                         <button
                             type="button"
                             class="btn btn-danger btn-sm"
@@ -192,9 +195,11 @@ import { ref, computed, reactive } from 'vue'
 import { useDevicesStore } from '../stores/devicesStore'
 import { useAuthStore } from '../stores/authStore'
 import { buildUpn, normalizeForUPN } from '../utils/upn.js'
+import { cancelRunningPs, resetPsCancel } from '../utils/cancelPs'
 
 const devicesStore = useDevicesStore()
 const authStore = useAuthStore()
+const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
 
 const confirmWord = 'LÖSCHEN'
 const confirm = reactive({ show: false, text: '' })
@@ -363,6 +368,7 @@ function openConfirm() {
 async function runRemove() {
     const rowsToRemove = devicesToRemove.value
     if (!rowsToRemove.length) return
+    resetPsCancel()
     running.value = true
     try {
         await devicesStore.removeDevicesAutoBatch(rowsToRemove)

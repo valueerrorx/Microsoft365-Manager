@@ -37,6 +37,9 @@ Anna;Schmidt</pre>
                             (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
                             und gegen die geladene Benutzerliste abgeglichen.
                         </div>
+                        <a :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+                            <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
+                        </a>
                     </div>
                 </div>
 
@@ -186,7 +189,7 @@ Anna;Schmidt</pre>
                         <input v-model="confirm.text" type="text" class="form-control" style="font-family:monospace;" :disabled="usersStore.bulkRunning" />
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btn-sm" :disabled="usersStore.bulkRunning" @click="confirm.show = false">Abbrechen</button>
+                        <button type="button" class="btn btn-secondary btn-sm" @click="usersStore.bulkRunning ? cancelRunningPs() : (confirm.show = false)">{{ usersStore.bulkRunning ? 'Stoppen' : 'Abbrechen' }}</button>
                         <button
                             type="button"
                             class="btn btn-danger btn-sm"
@@ -251,7 +254,7 @@ Anna;Schmidt</pre>
                         </p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btn-sm" :disabled="usersStore.bulkRunning" @click="groupModal.show = false">Abbrechen</button>
+                        <button type="button" class="btn btn-secondary btn-sm" @click="usersStore.bulkRunning ? cancelRunningPs() : (groupModal.show = false)">{{ usersStore.bulkRunning ? 'Stoppen' : 'Abbrechen' }}</button>
                         <button
                             type="button"
                             class="btn btn-primary btn-sm"
@@ -291,7 +294,7 @@ Anna;Schmidt</pre>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btn-sm" :disabled="usersStore.bulkRunning" @click="deptModal.show = false">Abbrechen</button>
+                        <button type="button" class="btn btn-secondary btn-sm" @click="usersStore.bulkRunning ? cancelRunningPs() : (deptModal.show = false)">{{ usersStore.bulkRunning ? 'Stoppen' : 'Abbrechen' }}</button>
                         <button
                             type="button"
                             class="btn btn-primary btn-sm"
@@ -314,10 +317,12 @@ import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import { useGroupsStore } from '../stores/groupsStore'
 import { buildUpn, normalizeForUPN } from '../utils/upn.js'
+import { cancelRunningPs } from '../utils/cancelPs'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
 const groupsStore = useGroupsStore()
+const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
 
 const confirmWord = 'LÖSCHEN'
 const confirm = reactive({ show: false, text: '' })

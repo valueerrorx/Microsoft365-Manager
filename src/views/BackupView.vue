@@ -43,11 +43,18 @@
                             <span style="color:#8b949e;font-size:0.8rem;"> — inkl. Mitglieder + Owner</span>
                         </label>
                     </div>
-                    <div class="form-check mb-3">
+                    <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="bkRoles" v-model="sel.roles" />
                         <label class="form-check-label" for="bkRoles">
                             <strong>Rollen</strong>
                             <span style="color:#8b949e;font-size:0.8rem;"> — Verzeichnisrollen + zugewiesene Benutzer</span>
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="bkIntune" v-model="sel.intunePolicies" />
+                        <label class="form-check-label" for="bkIntune">
+                            <strong>Intune-Richtlinien</strong>
+                            <span style="color:#8b949e;font-size:0.8rem;"> — Settings Catalog + Compliance (keine Apps)</span>
                         </label>
                     </div>
 
@@ -55,12 +62,18 @@
                         <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i>
                         Gast-Konten, synchronisierte Benutzer und dynamische Gruppen werden ausgelassen — sie lassen sich nicht sauber wiederherstellen.
                         Geräte sind über die API nicht wiederherstellbar und daher nicht enthalten.
+                        Intune: nur Regeln/Zuweisungen, keine App-Pakete.
                     </div>
 
-                    <button class="btn btn-success" :disabled="backupStore.running || !anySelected" @click="runBackup">
-                        <i class="bi" :class="backupStore.running ? 'bi-arrow-repeat spin' : 'bi-download'"></i>
-                        {{ backupStore.running ? 'Sichert...' : 'Backup erstellen' }}
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button v-if="backupStore.running" class="btn btn-outline-danger" @click="cancelRunningPs">
+                            <i class="bi bi-stop-fill"></i> Stoppen
+                        </button>
+                        <button class="btn btn-success" :disabled="backupStore.running || !anySelected" @click="runBackup">
+                            <i class="bi" :class="backupStore.running ? 'bi-arrow-repeat spin' : 'bi-download'"></i>
+                            {{ backupStore.running ? 'Sichert...' : 'Backup erstellen' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,10 +117,16 @@
                                 <strong>Gruppen</strong> <span style="color:#8b949e;font-size:0.8rem;">({{ preview.counts.groups }})</span>
                             </label>
                         </div>
-                        <div class="form-check mb-3">
+                        <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" id="rsRoles" v-model="rsel.roles" :disabled="!preview.counts.roles" />
                             <label class="form-check-label" for="rsRoles">
                                 <strong>Rollen</strong> <span style="color:#8b949e;font-size:0.8rem;">({{ preview.counts.roles }})</span>
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="rsIntune" v-model="rsel.intunePolicies" :disabled="!preview.counts.intunePolicies" />
+                            <label class="form-check-label" for="rsIntune">
+                                <strong>Intune-Richtlinien</strong> <span style="color:#8b949e;font-size:0.8rem;">({{ preview.counts.intunePolicies }})</span>
                             </label>
                         </div>
 
@@ -122,18 +141,23 @@
 
                         <div class="info-box mb-3">
                             <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i>
-                            Bestehende Objekte (gleicher UPN / Mail-Nickname) werden <strong>übersprungen</strong>, nur Fehlende neu angelegt.
-                            Mitglieder/Owner/Rollen-Zuweisungen werden über die UPNs gesetzt; nicht auffindbare Benutzer werden übersprungen.
+                            Bestehende Objekte (gleicher UPN / Mail-Nickname / Richtlinienname) werden <strong>übersprungen</strong>, nur Fehlende neu angelegt.
+                            Intune-Zuweisungen brauchen vorhandene Gruppen — <strong>Gruppen zuerst</strong> wiederherstellen.
                         </div>
 
-                        <button
-                            class="btn btn-success"
-                            :disabled="backupStore.restoring || !anyRestoreSelected || (rsel.users && !pwValid)"
-                            @click="runRestore"
-                        >
-                            <i class="bi" :class="backupStore.restoring ? 'bi-arrow-repeat spin' : 'bi-upload'"></i>
-                            {{ backupStore.restoring ? 'Stellt wieder her...' : 'Wiederherstellen' }}
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button v-if="backupStore.restoring" class="btn btn-outline-danger" @click="cancelRunningPs">
+                                <i class="bi bi-stop-fill"></i> Stoppen
+                            </button>
+                            <button
+                                class="btn btn-success"
+                                :disabled="backupStore.restoring || !anyRestoreSelected || (rsel.users && !pwValid)"
+                                @click="runRestore"
+                            >
+                                <i class="bi" :class="backupStore.restoring ? 'bi-arrow-repeat spin' : 'bi-upload'"></i>
+                                {{ backupStore.restoring ? 'Stellt wieder her...' : 'Wiederherstellen' }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -147,6 +171,7 @@ import { useBackupStore } from '../stores/backupStore'
 import { useAuthStore } from '../stores/authStore'
 import PasswordInput from '../components/PasswordInput.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
+import { cancelRunningPs } from '../utils/cancelPs'
 
 const backupStore = useBackupStore()
 const authStore = useAuthStore()
@@ -154,23 +179,24 @@ const authStore = useAuthStore()
 const tab = ref('create')
 
 // --- Create ---
-const sel = reactive({ users: true, groups: true, roles: true })
-const anySelected = computed(() => sel.users || sel.groups || sel.roles)
+const sel = reactive({ users: true, groups: true, roles: true, intunePolicies: false })
+const anySelected = computed(() => sel.users || sel.groups || sel.roles || sel.intunePolicies)
 
 async function runBackup() {
     const categories = []
     if (sel.users) categories.push('users')
     if (sel.groups) categories.push('groups')
     if (sel.roles) categories.push('roles')
+    if (sel.intunePolicies) categories.push('intunePolicies')
     await backupStore.runBackup(categories)
 }
 
 // --- Restore ---
 const preview = ref(null)
-const rsel = reactive({ users: false, groups: false, roles: false })
+const rsel = reactive({ users: false, groups: false, roles: false, intunePolicies: false })
 const startPassword = ref('')
 const pwValid = computed(() => validatePassword(startPassword.value).valid)
-const anyRestoreSelected = computed(() => rsel.users || rsel.groups || rsel.roles)
+const anyRestoreSelected = computed(() => rsel.users || rsel.groups || rsel.roles || rsel.intunePolicies)
 const tenantMismatch = computed(() =>
     !!preview.value?.tenantDomain && !!authStore.tenantDomain && preview.value.tenantDomain !== authStore.tenantDomain
 )
@@ -189,6 +215,7 @@ async function pickBackup() {
     rsel.users = !!res.counts.users
     rsel.groups = !!res.counts.groups
     rsel.roles = !!res.counts.roles
+    rsel.intunePolicies = !!res.counts.intunePolicies
 }
 
 async function runRestore() {
@@ -197,6 +224,7 @@ async function runRestore() {
     if (rsel.users) categories.push('users')
     if (rsel.groups) categories.push('groups')
     if (rsel.roles) categories.push('roles')
+    if (rsel.intunePolicies) categories.push('intunePolicies')
     await backupStore.runRestore({
         backupPath: preview.value.filePath,
         categories,

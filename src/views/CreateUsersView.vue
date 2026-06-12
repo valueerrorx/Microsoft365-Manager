@@ -109,6 +109,9 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
             <div style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
               Trennzeichen: Semikolon oder Komma. Encoding: UTF-8 oder Windows-1252 (Excel).
             </div>
+            <a :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+              <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
+            </a>
           </div>
         </div>
 
@@ -116,10 +119,15 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
         <div v-if="usersStore.csvEntries.length">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <span style="font-size:0.875rem;font-weight:600;">{{ usersStore.csvEntries.length }} Einträge bereit</span>
-            <button class="btn btn-success" @click="runBulk" :disabled="usersStore.bulkRunning">
-              <i class="bi" :class="usersStore.bulkRunning ? 'bi-arrow-repeat spin' : 'bi-play-fill'"></i>
-              {{ usersStore.bulkRunning ? 'Läuft...' : 'Benutzer erstellen / aktualisieren' }}
-            </button>
+            <div class="d-flex gap-2">
+              <button v-if="usersStore.bulkRunning" class="btn btn-outline-danger" @click="cancelRunningPs">
+                <i class="bi bi-stop-fill"></i> Stoppen
+              </button>
+              <button class="btn btn-success" @click="runBulk" :disabled="usersStore.bulkRunning">
+                <i class="bi" :class="usersStore.bulkRunning ? 'bi-arrow-repeat spin' : 'bi-play-fill'"></i>
+                {{ usersStore.bulkRunning ? 'Läuft...' : 'Benutzer erstellen / aktualisieren' }}
+              </button>
+            </div>
           </div>
 
           <div class="table-ms365-hscroll table-ms365-hscroll--y">
@@ -200,9 +208,11 @@ import { useAuthStore } from '../stores/authStore'
 import PasswordInput from '../components/PasswordInput.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
 import { normalizeForUPN } from '../utils/upn.js'
+import { cancelRunningPs } from '../utils/cancelPs'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
+const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
 
 const tab = ref('single')
 const pwValid = computed(() => validatePassword(singleForm.newPassword).valid)

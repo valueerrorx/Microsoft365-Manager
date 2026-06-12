@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
-# Exports tenant objects (users / groups / roles) as one JSON payload for backup.
+# Exports tenant objects (users / groups / roles / intunePolicies) as one JSON payload for backup.
 # Restore-friendly: each object carries stable match keys (UPN, mailNickname) — no passwords.
 param(
     [Parameter(Mandatory = $true)]
@@ -43,6 +43,54 @@ function Get-GraphAll {
         $next = $resp['@odata.nextLink']
     }
     return $items
+}
+
+# Map Intune assignment groupId to mailNickname for restore-friendly backup.
+$script:GroupNickCache = @{}
+function Resolve-GroupMailNickname {
+    param([string]$GroupId)
+    $gid = [string]$GroupId
+    if (-not $gid) { return $null }
+    if ($script:GroupNickCache.ContainsKey($gid)) { return $script:GroupNickCache[$gid] }
+    try {
+        $g = Invoke-MgGraphRequest -Method GET -Uri "/v1.0/groups/$gid?`$select=mailNickname" -OutputType HashTable -ErrorAction Stop
+        $nick = [string]$g['mailNickname']
+        $script:GroupNickCache[$gid] = $nick
+        return $nick
+    } catch {
+        return $null
+    }
+}
+
+# Export Intune policy assignments as portable targets (group mailNickname / allDevices).
+function Get-IntuneAssignmentTargets {
+    param([string]$AssignmentsUri)
+    $out = New-Object System.Collections.Generic.List[object]
+    foreach ($a in @(Get-GraphAll $AssignmentsUri)) {
+        $t = $a.target
+        if (-not $t) { continue }
+        $otype = [string]$t.'@odata.type'
+        if ($otype -eq '#microsoft.graph.groupAssignmentTarget') {
+            $nick = Resolve-GroupMailNickname ([string]$t.groupId)
+            if ($nick) { $out.Add(@{ target = 'group'; mailNickname = $nick }) }
+        } elseif ($otype -eq '#microsoft.graph.allDevicesAssignmentTarget') {
+            $out.Add(@{ target = 'allDevices' })
+        } elseif ($otype -eq '#microsoft.graph.allLicensedUsersAssignmentTarget') {
+            $out.Add(@{ target = 'allLicensedUsers' })
+        }
+    }
+    return $out.ToArray()
+}
+
+# Copy a Graph hashtable minus read-only keys (for policy restore payloads).
+function Copy-GraphPayload {
+    param([hashtable]$Source, [string[]]$SkipKeys)
+    $ht = @{}
+    foreach ($kv in $Source.GetEnumerator()) {
+        if ($SkipKeys -contains $kv.Key) { continue }
+        $ht[$kv.Key] = $kv.Value
+    }
+    return $ht
 }
 
 $wanted = @($Categories -split ',' | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
@@ -156,13 +204,69 @@ try {
         Write-Host "  Rollen: $($rolesOut.Count)"
     }
 
+    if ($wanted -contains 'intunepolicies') {
+        Write-Host "Sichere Intune-Richtlinien..."
+        $policySkip = @('id', 'createdDateTime', 'lastModifiedDateTime', 'version', 'settingCount', 'creationSource', 'isAssigned', 'assignments', 'settings')
+        $settingSkip = @('id', 'settingInstanceId')
+        $policiesOut = New-Object System.Collections.Generic.List[object]
+
+        $cfgList = @(Get-GraphAll '/beta/deviceManagement/configurationPolicies')
+        $cfgTotal = $cfgList.Count
+        Write-Host "  $cfgTotal Settings-Catalog-Richtlinien..."
+        $ci = 0
+        foreach ($p in $cfgList) {
+            $ci++
+            $polId = [string]$p.id
+            $pname = [string]$p.name
+            Write-Host "  [cfg $ci/$cfgTotal] $pname"
+            $full = Invoke-MgGraphRequest -Method GET -Uri "/beta/deviceManagement/configurationPolicies/$polId" -OutputType HashTable -ErrorAction Stop
+            $settingsOut = New-Object System.Collections.Generic.List[object]
+            foreach ($s in @(Get-GraphAll "/beta/deviceManagement/configurationPolicies/$polId/settings")) {
+                if ($s -is [hashtable]) { $settingsOut.Add((Copy-GraphPayload -Source $s -SkipKeys $settingSkip)) }
+            }
+            $policiesOut.Add(@{
+                kind         = 'configurationPolicy'
+                displayName  = $pname
+                payload      = (Copy-GraphPayload -Source $full -SkipKeys $policySkip)
+                settings     = $settingsOut.ToArray()
+                assignments  = @(Get-IntuneAssignmentTargets "/beta/deviceManagement/configurationPolicies/$polId/assignments")
+            })
+        }
+
+        $cmpList = @(Get-GraphAll '/beta/deviceManagement/deviceCompliancePolicies')
+        $cmpTotal = $cmpList.Count
+        Write-Host "  $cmpTotal Compliance-Richtlinien..."
+        $cpi = 0
+        foreach ($p in $cmpList) {
+            $cpi++
+            $polId = [string]$p.id
+            $pname = [string]$p.displayName
+            Write-Host "  [cmp $cpi/$cmpTotal] $pname"
+            $full = Invoke-MgGraphRequest -Method GET -Uri "/beta/deviceManagement/deviceCompliancePolicies/$polId" -OutputType HashTable -ErrorAction Stop
+            $policiesOut.Add(@{
+                kind         = 'compliancePolicy'
+                displayName  = $pname
+                payload      = (Copy-GraphPayload -Source $full -SkipKeys $policySkip)
+                settings     = @()
+                assignments  = @(Get-IntuneAssignmentTargets "/beta/deviceManagement/deviceCompliancePolicies/$polId/assignments")
+            })
+        }
+
+        $catData['intunePolicies'] = $policiesOut.ToArray()
+        Write-Host "  Intune-Richtlinien: $($policiesOut.Count)"
+    }
+
+    $schemaVer = 1
+    if ($catData.ContainsKey('intunePolicies')) { $schemaVer = 2 }
+
     $payload = @{
-        schemaVersion = 1
+        schemaVersion = $schemaVer
         createdAt     = (Get-Date).ToUniversalTime().ToString("o")
         tenantDomain  = $tenantDomain
         categories    = $catData
     }
-    $result = @{ status = "ok"; message = "Backup erstellt"; backup = $payload } | ConvertTo-Json -Depth 12 -Compress
+    $jsonDepth = if ($schemaVer -ge 2) { 24 } else { 12 }
+    $result = @{ status = "ok"; message = "Backup erstellt"; backup = $payload } | ConvertTo-Json -Depth $jsonDepth -Compress
     Write-Output "###JSON_START###"
     Write-Output $result
     Write-Output "###JSON_END###"

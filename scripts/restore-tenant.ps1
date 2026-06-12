@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
-# Restores selected categories (users / groups / roles) from a backup JSON.
+# Restores selected categories (users / groups / roles / intunePolicies) from a backup JSON.
 # Conflict policy: existing objects (matched by UPN / mailNickname / roleTemplateId) are skipped, only missing ones are created.
 param(
     [Parameter(Mandatory = $true)]
@@ -43,6 +43,20 @@ $wanted = @($Categories -split ',' | ForEach-Object { $_.Trim().ToLowerInvariant
 $cats = $backup.categories
 $summary = @{}
 
+# Page through a Graph collection endpoint, following @odata.nextLink.
+function Get-GraphAll {
+    param([string]$Uri)
+    $items = New-Object System.Collections.Generic.List[object]
+    $next = $Uri
+    while ($next) {
+        $resp = Invoke-MgGraphRequest -Method GET -Uri $next -OutputType HashTable -ErrorAction Stop
+        $vals = $resp['value']
+        if ($null -ne $vals) { foreach ($v in @($vals)) { $items.Add($v) } }
+        $next = $resp['@odata.nextLink']
+    }
+    return $items
+}
+
 # Resolve a UPN to a directory object id; returns $null when not found.
 function Resolve-UserId {
     param([string]$Upn)
@@ -52,6 +66,69 @@ function Resolve-UserId {
         if ($u -and $u.Id) { return $u.Id }
     } catch {}
     return $null
+}
+
+# Resolve group mailNickname to directory object id; returns $null when not found.
+function Resolve-GroupIdByNick {
+    param([string]$MailNickname)
+    $nick = [string]$MailNickname
+    if ([string]::IsNullOrWhiteSpace($nick)) { return $null }
+    try {
+        $f = Invoke-MgGraphRequest -Method GET -Uri "/v1.0/groups?`$filter=mailNickname eq '$nick'&`$select=id" -OutputType HashTable -ErrorAction Stop
+        $id = @($f['value'])[0].id
+        if ($id) { return [string]$id }
+    } catch {}
+    return $null
+}
+
+# Convert backup JSON nodes to hashtables for Graph POST bodies.
+function ConvertTo-HashtableDeep {
+    param($InputObject)
+    if ($null -eq $InputObject) { return $null }
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $ht = @{}
+        foreach ($k in @($InputObject.Keys)) { $ht[$k] = ConvertTo-HashtableDeep $InputObject[$k] }
+        return $ht
+    }
+    if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string]) {
+        return @($InputObject | ForEach-Object { ConvertTo-HashtableDeep $_ })
+    }
+    return $InputObject
+}
+
+# POST Intune policy assignments from portable backup targets.
+function Set-IntunePolicyAssignments {
+    param(
+        [string]$AssignUri,
+        [array]$Assignments,
+        [System.Collections.Generic.List[string]]$Errors,
+        [string]$PolicyLabel
+    )
+    $assignList = New-Object System.Collections.Generic.List[object]
+    foreach ($a in @($Assignments)) {
+        $target = $null
+        $t = [string]$a.target
+        if ($t -eq 'allDevices') {
+            $target = @{ '@odata.type' = '#microsoft.graph.allDevicesAssignmentTarget' }
+        } elseif ($t -eq 'allLicensedUsers') {
+            $target = @{ '@odata.type' = '#microsoft.graph.allLicensedUsersAssignmentTarget' }
+        } elseif ($t -eq 'group') {
+            $nick = [string]$a.mailNickname
+            $gid = Resolve-GroupIdByNick $nick
+            if (-not $gid) {
+                $Errors.Add("Zuweisung $PolicyLabel : Gruppe '$nick' nicht gefunden")
+                continue
+            }
+            $target = @{ '@odata.type' = '#microsoft.graph.groupAssignmentTarget'; groupId = $gid }
+        }
+        if ($target) { $assignList.Add(@{ target = $target }) }
+    }
+    if ($assignList.Count -eq 0) { return }
+    try {
+        Invoke-MgGraphRequest -Method POST -Uri $AssignUri -Body @{ assignments = $assignList.ToArray() } -ErrorAction Stop | Out-Null
+    } catch {
+        $Errors.Add("Zuweisungen $PolicyLabel : $($_.Exception.Message)")
+    }
 }
 
 try {
@@ -211,11 +288,68 @@ try {
         Write-Host "  Rollen: zugewiesen $assigned, uebersprungen $skipped, fehlgeschlagen $failed"
     }
 
-    $result = @{ status = "ok"; message = "Wiederherstellung abgeschlossen"; summary = $summary } | ConvertTo-Json -Depth 8 -Compress
+    if ($wanted -contains 'intunepolicies' -and $cats.intunePolicies) {
+        $list = @($cats.intunePolicies)
+        $total = $list.Count
+        Write-Host "Stelle Intune-Richtlinien wieder her ($total)..."
+        $created = 0; $skipped = 0; $failed = 0
+        $errors = New-Object System.Collections.Generic.List[string]
+        $existingCfg = @{}
+        foreach ($p in @(Get-GraphAll '/beta/deviceManagement/configurationPolicies')) { $existingCfg[[string]$p.name] = $true }
+        $existingCmp = @{}
+        foreach ($p in @(Get-GraphAll '/beta/deviceManagement/deviceCompliancePolicies')) { $existingCmp[[string]$p.displayName] = $true }
+        $i = 0
+        foreach ($pol in $list) {
+            $i++
+            $kind = [string]$pol.kind
+            $label = [string]$pol.displayName
+            Write-Host "  [$i/$total] $label ($kind)"
+            if (-not $label -or -not $kind) { continue }
+
+            $exists = $false
+            if ($kind -eq 'configurationPolicy' -and $existingCfg.ContainsKey($label)) { $exists = $true }
+            elseif ($kind -eq 'compliancePolicy' -and $existingCmp.ContainsKey($label)) { $exists = $true }
+            if ($exists) { $skipped++; continue }
+
+            try {
+                $body = ConvertTo-HashtableDeep $pol.payload
+                if (-not $body) { throw 'Payload fehlt' }
+                $policyId = $null
+                if ($kind -eq 'configurationPolicy') {
+                    $newPol = Invoke-MgGraphRequest -Method POST -Uri '/beta/deviceManagement/configurationPolicies' -Body $body -ErrorAction Stop
+                    $policyId = [string]$newPol.id
+                    foreach ($setting in @($pol.settings)) {
+                        $sBody = ConvertTo-HashtableDeep $setting
+                        if (-not $sBody) { continue }
+                        try {
+                            Invoke-MgGraphRequest -Method POST -Uri "/beta/deviceManagement/configurationPolicies/$policyId/settings" -Body $sBody -ErrorAction Stop | Out-Null
+                        } catch {
+                            $errors.Add("Setting $label : $($_.Exception.Message)")
+                        }
+                    }
+                    Set-IntunePolicyAssignments -AssignUri "/beta/deviceManagement/configurationPolicies/$policyId/assign" -Assignments @($pol.assignments) -Errors $errors -PolicyLabel $label
+                } elseif ($kind -eq 'compliancePolicy') {
+                    $newPol = Invoke-MgGraphRequest -Method POST -Uri '/beta/deviceManagement/deviceCompliancePolicies' -Body $body -ErrorAction Stop
+                    $policyId = [string]$newPol.id
+                    Set-IntunePolicyAssignments -AssignUri "/beta/deviceManagement/deviceCompliancePolicies/$policyId/assign" -Assignments @($pol.assignments) -Errors $errors -PolicyLabel $label
+                } else {
+                    throw "Unbekannter kind: $kind"
+                }
+                $created++
+            } catch {
+                $failed++
+                $errors.Add("$label : $($_.Exception.Message)")
+            }
+        }
+        $summary['intunePolicies'] = @{ created = $created; skipped = $skipped; failed = $failed; errors = $errors.ToArray() }
+        Write-Host "  Intune-Richtlinien: erstellt $created, uebersprungen $skipped, fehlgeschlagen $failed"
+    }
+
+    $result = @{ status = "ok"; message = "Wiederherstellung abgeschlossen"; summary = $summary } | ConvertTo-Json -Depth 12 -Compress
     Write-Output "###JSON_START###"; Write-Output $result; Write-Output "###JSON_END###"; exit 0
 } catch {
     $raw = "$($_.Exception.Message)"
     if ($_.ErrorDetails -and $_.ErrorDetails.Message) { $raw += " $($_.ErrorDetails.Message)" }
-    $result = @{ status = "error"; message = "Fehler: $raw"; summary = $summary } | ConvertTo-Json -Depth 8 -Compress
+    $result = @{ status = "error"; message = "Fehler: $raw"; summary = $summary } | ConvertTo-Json -Depth 12 -Compress
     Write-Output "###JSON_START###"; Write-Output $result; Write-Output "###JSON_END###"; exit 1
 }
