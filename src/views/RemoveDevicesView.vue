@@ -67,7 +67,8 @@ Anna;Schmidt</pre>
                             <span style="color:#3fb950;font-weight:600;">{{ devicesToRemove.length }} Geräte gefunden</span>
                             <span style="color:#8b949e;">· {{ matchedRows.length }} Schüler mit Geräten</span>
                             <span v-if="lazyRows.length" style="color:#58a6ff;">(inkl. {{ lazyRows.length }} bestätigt)</span>
-                            <span style="color:#8b949e;">· {{ unmatchedRows.length }} ohne Geräte</span>
+                            <span v-if="fuzzyRows.length" style="color:#d29922;">· {{ fuzzyRows.length }} fuzzy</span>
+                            <span style="color:#8b949e;">· {{ noMatchRows.length }} ohne Geräte</span>
                             <span class="d-inline-flex align-items-center gap-3 ms-2" style="font-size:0.8rem;">
                                 <label class="d-inline-flex align-items-center gap-1 mb-0" style="cursor:pointer;color:#3fb950;">
                                     <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.green" /> mit Geräten
@@ -291,6 +292,9 @@ const rows = computed(() =>
 const matchedRows = computed(() => rows.value.filter((r) => r.devices.length))
 const lazyRows = computed(() => rows.value.filter((r) => r.lazy))
 const unmatchedRows = computed(() => rows.value.filter((r) => !r.devices.length))
+// Split unmatched into fuzzy-Kandidaten vs. echt ohne Geräte/Treffer.
+const fuzzyRows = computed(() => unmatchedRows.value.filter((r) => r.candidate))
+const noMatchRows = computed(() => unmatchedRows.value.filter((r) => !r.candidate))
 const devicesToRemove = computed(() => matchedRows.value.flatMap((r) => r.devices))
 
 // Category filter: green = hat Geräte (inkl. bestätigt), orange = fuzzy-Kandidat, gray = keine Geräte.

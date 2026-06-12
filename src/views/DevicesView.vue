@@ -594,7 +594,7 @@ const ownerLicenseOptions = computed(() => {
 const sortKey = ref('displayName')
 const sortDir = ref(1)
 const currentPage = ref(1)
-const pageSizeOptions = [50, 100, 200]
+const pageSizeOptions = [50, 100, 200, 400, 800]
 const pageSize = ref(50)
 
 const filteredDevices = computed(() => {

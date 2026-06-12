@@ -79,6 +79,9 @@
           <button type="button" class="btn btn-outline-primary btn-sm" @click="openAddToGroupModal">
             <i class="bi bi-people me-1"></i>Zur Gruppe hinzufügen
           </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" @click="openBatchSetDept">
+            <i class="bi bi-building me-1"></i>Abteilung setzen
+          </button>
           <button type="button" class="btn btn-outline-danger btn-sm" @click="openBatchDeactivate">
             <i class="bi bi-person-slash me-1"></i>Deaktivieren
           </button>
@@ -653,6 +656,37 @@
       </div>
     </div>
 
+    <!-- Batch set department -->
+    <div v-if="batchDeptModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-building me-2 text-primary"></i>
+              Abteilung setzen (Batch)
+            </h5>
+            <button type="button" class="btn-close" :disabled="batchDeptModal.running" @click="batchDeptModal.show = false"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">Abteilung für <strong style="color:#e6edf3;">{{ batchDeptModal.targets.length }}</strong> Benutzer</label>
+            <input v-model="batchDeptModal.value" type="text" class="form-control mb-3" placeholder="z. B. 2025" :disabled="batchDeptModal.running" @keyup.enter="runBatchSetDept" />
+            <ul class="batch-user-list list-unstyled mb-0 small" style="color:#8b949e;">
+              <li v-for="t in batchDeptModal.targets" :key="t.userPrincipalName" class="py-1 border-bottom border-secondary border-opacity-25">
+                <strong style="color:#e6edf3;">{{ t.displayName }}</strong>
+                <span class="d-block font-monospace" style="font-size:0.78rem;">{{ t.userPrincipalName }}<span v-if="t.department" class="text-secondary"> — derzeit: {{ t.department }}</span></span>
+              </li>
+            </ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" :disabled="batchDeptModal.running" @click="batchDeptModal.show = false">Abbrechen</button>
+            <button type="button" class="btn btn-primary btn-sm" :disabled="batchDeptModal.running || !batchDeptModal.value.trim()" @click="runBatchSetDept">
+              {{ batchDeptModal.running ? 'Wird ausgeführt...' : 'Abteilung setzen' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Batch delete -->
     <div v-if="batchDeleteModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
       <div class="modal-dialog modal-lg delete-modal-dialog">
@@ -723,7 +757,7 @@ const filterLicenseSku = ref('')
 const sortKey = ref('displayName')
 const sortDir = ref(1) // 1 = asc, -1 = desc
 const currentPage = ref(1)
-const pageSizeOptions = [50, 100, 200]
+const pageSizeOptions = [50, 100, 200, 400, 800]
 const pageSize = ref(50)
 
 const departments = computed(() => {
@@ -847,6 +881,7 @@ watch(
 const batchMfaModal = reactive({ show: false, running: false, targets: [] })
 const batchDeactivateModal = reactive({ show: false, running: false, targets: [] })
 const batchActivateModal = reactive({ show: false, running: false, targets: [] })
+const batchDeptModal = reactive({ show: false, running: false, targets: [], value: '' })
 const batchDeleteModal = reactive({
   show: false,
   running: false,
@@ -1013,6 +1048,42 @@ async function runBatchActivate() {
   )
   batchActivateModal.running = false
   batchActivateModal.show = false
+  clearSelection()
+}
+
+function openBatchSetDept() {
+  if (selectedUserObjects.value.length < 2) return
+  batchDeptModal.targets = selectedUserObjects.value.map((u) => ({
+    userPrincipalName: u.userPrincipalName,
+    displayName: u.displayName,
+    department: u.department || ''
+  }))
+  batchDeptModal.value = ''
+  batchDeptModal.show = true
+}
+
+async function runBatchSetDept() {
+  const dept = batchDeptModal.value.trim()
+  if (!dept) return
+  batchDeptModal.running = true
+  // Skip users that already have the target department.
+  const upns = batchDeptModal.targets
+    .filter((t) => (t.department || '') !== dept)
+    .map((t) => t.userPrincipalName)
+  if (!upns.length) {
+    authStore.showToast(`Alle bereits in "${dept}"`, 'info')
+    batchDeptModal.running = false
+    batchDeptModal.show = false
+    return
+  }
+  const { ok, fail } = await usersStore.setDepartmentBatch(upns, dept)
+  const skipped = batchDeptModal.targets.length - upns.length
+  const msg = `Abteilung gesetzt: ${ok}${skipped ? `, übersprungen: ${skipped}` : ''}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
+  if (fail && !ok) authStore.showToast(msg, 'error')
+  else if (fail) authStore.showToast(msg, 'warning')
+  else authStore.showToast(msg, 'success')
+  batchDeptModal.running = false
+  batchDeptModal.show = false
   clearSelection()
 }
 
