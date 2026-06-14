@@ -386,6 +386,18 @@ const usersByDisplayName = computed(() => {
     return list
 })
 
+// All tenant accounts whose displayName tokens are a superset of the CSV name tokens.
+// Used to resolve same-name collisions where two CSV rows build the same UPN but the
+// tenant has several like-named accounts with differing UPNs (e.g. kowatsch.david +
+// kowatsch.d, displayName "Kowatsch L David" -> extra token still matches via subset).
+const likeNamedAccounts = (entry) => {
+    const csvTokens = `${entry.vorname} ${entry.nachname}`.split(/[\s,.-]+/).map(normalizeForUPN).filter(Boolean)
+    if (csvTokens.length < 2) return []
+    return usersByDisplayName.value
+        .filter((cand) => csvTokens.every((t) => cand.tokens.has(t)))
+        .map((cand) => cand.user)
+}
+
 // Stable per-row key so confirmed lazy matches survive recomputes.
 const rowKey = (entry) => `${normalizeForUPN(entry.vorname)}|${normalizeForUPN(entry.nachname)}`
 
@@ -438,8 +450,8 @@ function findCandidate(entry) {
 }
 
 // Reconstruct UPN per CSV row (same logic as create) and classify against the user list.
-const rows = computed(() =>
-    usersStore.batchEntries.map((entry) => {
+const rows = computed(() => {
+    const built = usersStore.batchEntries.map((entry) => {
         const upn = buildUpn(entry.vorname, entry.nachname, domain.value)
         const count = upn ? (upnCounts.value.get(upn.toLowerCase()) || 0) : 0
         const key = rowKey(entry)
@@ -458,13 +470,47 @@ const rows = computed(() =>
                 if (candidate) effectiveUpn = candidate.upn
             }
         }
-        const department =
-            status === 'matched' || status === 'lazy'
-                ? userByUpn.value.get(effectiveUpn.toLowerCase())?.department || ''
-                : ''
-        return { entry, key, upn: effectiveUpn, count, status, department, candidate }
+        return { entry, key, upn: effectiveUpn, count, status, candidate }
     })
-)
+
+    // Same-name collision: several CSV rows resolve to the same UPN, but the tenant
+    // holds several like-named accounts (differing UPNs). Reassign the surplus rows
+    // to the still-unclaimed like-named accounts as fuzzy candidates to confirm.
+    const claimed = new Set(built.filter((r) => r.status === 'matched').map((r) => r.upn.toLowerCase()))
+    const byUpn = new Map()
+    for (const r of built) {
+        if (r.status !== 'matched') continue
+        if (!byUpn.has(r.upn.toLowerCase())) byUpn.set(r.upn.toLowerCase(), [])
+        byUpn.get(r.upn.toLowerCase()).push(r)
+    }
+    for (const dupRows of byUpn.values()) {
+        if (dupRows.length < 2) continue
+        const others = likeNamedAccounts(dupRows[0].entry)
+            .map((u) => String(u.userPrincipalName || '').toLowerCase())
+            .filter((u) => u && !claimed.has(u))
+        // Keep the first row exact; offer free like-named accounts to the surplus rows.
+        for (let i = 1; i < dupRows.length && others.length; i++) {
+            const altUpn = others.shift()
+            claimed.add(altUpn)
+            const confirmed = confirmedMatches[dupRows[i].key]
+            if (confirmed === altUpn) {
+                dupRows[i].status = 'lazy'
+            } else {
+                dupRows[i].status = 'unmatched'
+                dupRows[i].candidate = { upn: altUpn, firstNorm: '', user: userByUpn.value.get(altUpn) }
+            }
+            dupRows[i].upn = altUpn
+        }
+    }
+
+    for (const r of built) {
+        r.department =
+            r.status === 'matched' || r.status === 'lazy'
+                ? userByUpn.value.get(r.upn.toLowerCase())?.department || ''
+                : ''
+    }
+    return built
+})
 
 // Category filter: green = gefunden (inkl. bestätigt), orange = fuzzy-Kandidat, gray = nicht gefunden/mehrdeutig.
 const categoryOf = (r) => {
