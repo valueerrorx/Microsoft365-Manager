@@ -7,10 +7,6 @@ $script:Mg365GraphSdkVersion = [version]'2.36.1'
 function Ensure-Mg365GraphModule {
     param([Parameter(Mandatory = $true)][string]$Name)
 
-    try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
-    try { Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -Confirm:$false -ErrorAction Stop | Out-Null } catch {}
-    try { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue } catch {}
-
     $isGraph = $Name -like 'Microsoft.Graph*'
     $ver = if ($isGraph) { $script:Mg365GraphSdkVersion } else { $null }
 
@@ -26,7 +22,12 @@ function Ensure-Mg365GraphModule {
         @(Get-Module -ListAvailable -Name $Name)
     }
 
+    # Bereits installiert → direkt importieren, NuGet/PSGallery-Setup (Netzwerk) überspringen.
     if (-not $available.Count) {
+        # PackageProvider/Repository nur im Install-Pfad anfassen (sonst Netzwerk-Roundtrip pro Aufruf).
+        try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
+        try { Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -Confirm:$false -ErrorAction Stop | Out-Null } catch {}
+        try { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue } catch {}
         Write-Host "Installiere Modul: $Name$(if ($ver) { " ($ver)" })"
         $installArgs = @{
             Name         = $Name

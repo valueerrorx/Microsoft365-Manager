@@ -585,8 +585,8 @@ import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useDevicesStore } from '../stores/devicesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { useGroupsStore } from '../stores/groupsStore'
-import { humanLicenseLabel } from '../utils/licenseLabel.js'
-import MultiSelectFilter from '../components/MultiSelectFilter.vue'
+import { humanLicenseLabel, licenseListSortRank } from '../utils/licenseLabel.js'
+import MultiSelectFilter, { MSF_NONE } from '../components/MultiSelectFilter.vue'
 import { cancelRunningPs, resetPsCancel } from '../utils/cancelPs'
 
 const devicesStore = useDevicesStore()
@@ -661,8 +661,11 @@ const ownerLicenseOptions = computed(() => {
     for (const id of skus) seen.add(id)
   }
   return [...seen]
-    .map((id) => ({ skuId: id, label: humanLicenseLabel(usersStore.licenseMap[id]?.skuPartNumber) || id }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((id) => ({ skuId: id, sku: usersStore.licenseMap[id]?.skuPartNumber, label: humanLicenseLabel(usersStore.licenseMap[id]?.skuPartNumber) || id }))
+    .sort((a, b) => {
+      const r = licenseListSortRank(a.sku) - licenseListSortRank(b.sku)
+      return r !== 0 ? r : a.label.localeCompare(b.label)
+    })
 })
 // Optionen für MultiSelectFilter: 'none' (kein/unlizenzierter Besitzer) + alle vorkommenden SKUs.
 const licenseFilterOptions = computed(() => [
@@ -691,7 +694,8 @@ const filteredDevices = computed(() => {
         (d.managementLabel || '').toLowerCase().includes(q)
     )
   }
-  if (filterTrusts.value.length) {
+  if (filterTrusts.value.includes(MSF_NONE)) { if (!filterTrustsInvert.value) list = [] }
+  else if (filterTrusts.value.length) {
     const want = new Set(filterTrusts.value)
     list = list.filter((d) => {
       const t = d.trustType || ''
@@ -707,7 +711,8 @@ const filteredDevices = computed(() => {
   if (fc === 'yes') list = list.filter((d) => d.isCompliant === true)
   if (fc === 'no') list = list.filter((d) => d.isCompliant === false)
   if (fc === 'unknown') list = list.filter((d) => d.isCompliant !== true && d.isCompliant !== false)
-  if (filterLicenseSkus.value.length) {
+  if (filterLicenseSkus.value.includes(MSF_NONE)) { if (!filterLicenseInvert.value) list = [] }
+  else if (filterLicenseSkus.value.length) {
     const want = new Set(filterLicenseSkus.value)
     const wantNone = want.has('none')
     list = list.filter((d) => {

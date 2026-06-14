@@ -597,7 +597,12 @@ const PARALLEL_PS_SCRIPTS = new Set([
   'scripts/group-lifecycle.ps1',
   'scripts/backup-tenant.ps1',
   'scripts/get-bitlocker-keys.ps1',
-  'scripts/get-laps-credentials.ps1'
+  'scripts/get-laps-credentials.ps1',
+  // Einzel-Schreibvorgänge: nicht hinter Lese-Ops in der Queue blockieren (eigener Prozess, Graph serialisiert serverseitig).
+  'scripts/update-user-licenses.ps1',
+  'scripts/set-department.ps1',
+  'scripts/update-user.ps1',
+  'scripts/set-users-enabled.ps1'
 ])
 
 let psScriptQueueTail = Promise.resolve()

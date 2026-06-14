@@ -40,6 +40,11 @@ Anna;Schmidt</pre>
                         <a :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
                             <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
                         </a>
+                        <div style="font-size:0.78rem;color:#d29922;margin-top:0.75rem;">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Abgleich erfolgt gegen die geladene Benutzerliste — diese muss aktuell sein.
+                            Neu erstellte Benutzer ggf. zuerst neu laden.
+                        </div>
                     </div>
                 </div>
 
@@ -367,11 +372,26 @@ const usersByLastName = computed(() => {
     return m
 })
 
+// Index: list of {tokens:Set, user} from normalized displayName tokens, for name-based fallback.
+// Anzeigename wird oft korrigiert, während die UPN/Mail aus Bequemlichkeit alt bleibt.
+const usersByDisplayName = computed(() => {
+    const list = []
+    for (const u of usersStore.users) {
+        const dn = String(u.displayName || '')
+        if (!dn) continue
+        const tokens = dn.split(/[\s,.-]+/).map(normalizeForUPN).filter(Boolean)
+        if (tokens.length < 2) continue
+        list.push({ tokens: new Set(tokens), user: u })
+    }
+    return list
+})
+
 // Stable per-row key so confirmed lazy matches survive recomputes.
 const rowKey = (entry) => `${normalizeForUPN(entry.vorname)}|${normalizeForUPN(entry.nachname)}`
 
 // User-confirmed lazy matches: rowKey -> chosen account UPN.
-const confirmedMatches = reactive({})
+// Stored in the users store so confirmations survive view navigation.
+const confirmedMatches = usersStore.batchConfirmedMatches
 
 // Does an account's first-name part plausibly match the CSV first name?
 // allowExact: when the lastname itself is a reduced double-name variant, an exact
@@ -400,6 +420,18 @@ function findCandidate(entry) {
         const isReducedLastName = ln !== nn // a shortened double-name variant
         for (const c of list) {
             if (firstNameMatches(c.firstNorm, vn, vnFirstPart, isReducedLastName)) return c
+        }
+    }
+    // Fallback: match against displayName (often corrected while UPN/mail stays old).
+    // Tokenize CSV name parts the same way (split on spaces/dots/hyphens), then require
+    // every CSV token to be present in the account's displayName token set (subset match).
+    const csvTokens = `${entry.vorname} ${entry.nachname}`.split(/[\s,.-]+/).map(normalizeForUPN).filter(Boolean)
+    if (csvTokens.length >= 2) {
+        for (const cand of usersByDisplayName.value) {
+            if (csvTokens.every((t) => cand.tokens.has(t))) {
+                const upn = String(cand.user.userPrincipalName || '').toLowerCase()
+                if (upn) return { upn, firstNorm: '', user: cand.user }
+            }
         }
     }
     return null

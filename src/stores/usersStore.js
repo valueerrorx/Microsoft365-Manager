@@ -16,6 +16,9 @@ export const useUsersStore = defineStore('users', {
     csvEntries: [],
     // Separate CSV list for the batch/remove view, independent from the create flow.
     batchEntries: [],
+    // User-confirmed fuzzy matches for the batch view (rowKey -> chosen UPN).
+    // Lives in the store so confirmations survive navigation; cleared on new import.
+    batchConfirmedMatches: {},
     bulkRunning: false,
     bulkLogs: [],
     failedUsers: [],
@@ -404,6 +407,8 @@ export const useUsersStore = defineStore('users', {
         const dataResult = await window.ipcRenderer.invoke('get-csv-data')
         if (dataResult.status === 'ok') {
           this.batchEntries = dataResult.data
+          // Fresh CSV -> drop old fuzzy confirmations so rows are re-classified.
+          this.batchConfirmedMatches = {}
           auth.addLog({ type: 'success', message: `${dataResult.data.length} Einträge aus CSV importiert` })
           auth.showToast(`${dataResult.data.length} Einträge importiert`, 'success')
         }

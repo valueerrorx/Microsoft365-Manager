@@ -743,7 +743,7 @@ import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import { useGroupsStore } from '../stores/groupsStore'
 import PasswordInput from '../components/PasswordInput.vue'
-import MultiSelectFilter from '../components/MultiSelectFilter.vue'
+import MultiSelectFilter, { MSF_NONE } from '../components/MultiSelectFilter.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
 import { humanLicenseLabel } from '../utils/licenseLabel.js'
 import { cancelRunningPs, resetPsCancel, psCancelRequested } from '../utils/cancelPs'
@@ -798,7 +798,8 @@ const filteredUsers = computed(() => {
   }
   if (filterStatus.value === 'active') list = list.filter(u => u.accountEnabled)
   if (filterStatus.value === 'inactive') list = list.filter(u => !u.accountEnabled)
-  if (filterDepts.value.length) {
+  if (filterDepts.value.includes(MSF_NONE)) { if (!filterDeptsInvert.value) list = [] }
+  else if (filterDepts.value.length) {
     const want = new Set(filterDepts.value)
     const wantNone = want.has('__none__')
     list = list.filter((u) => {
@@ -806,7 +807,8 @@ const filteredUsers = computed(() => {
       return filterDeptsInvert.value ? !match : match
     })
   }
-  if (filterLicenseSkus.value.length) {
+  if (filterLicenseSkus.value.includes(MSF_NONE)) { if (!filterLicenseInvert.value) list = [] }
+  else if (filterLicenseSkus.value.length) {
     const want = new Set(filterLicenseSkus.value)
     const wantNone = want.has('__none__')
     list = list.filter((u) => {

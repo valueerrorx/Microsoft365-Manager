@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
-// Lower rank = earlier in license lists (A3 Schüler, then A3 Lehrer, then rest).
+// Lower rank = earlier in license lists (A3 Schüler/Lehrer, then A1 Web-Apps Schüler/Lehrer, then rest).
 export function licenseListSortRank(skuPartNumber) {
   const bucket = a3LicenseBucket(skuPartNumber)
   if (bucket === 'student') return 0
   if (bucket === 'faculty') return 1
-  return 2
+  const u = String(skuPartNumber || '').toUpperCase()
+  if (u.includes('STANDARDWOFFPACK')) {
+    if (u.includes('STUDENT')) return 2
+    if (u.includes('FACULTY')) return 3
+  }
+  return 4
 }
 
 // Maps A3 skuPartNumber to student/faculty bucket for dashboard (null if not A3 Schüler/Lehrer SKU).
@@ -35,8 +40,8 @@ export function humanLicenseLabel(skuPartNumber) {
   }
 
   if (u.includes('STANDARDWOFFPACK')) {
-    if (u.includes('STUDENT')) return 'Office 365 Web-Apps (Schüler)'
-    if (u.includes('FACULTY')) return 'Office 365 Web-Apps (Lehrer)'
+    if (u.includes('STUDENT')) return 'A1 Schüler (Web-Apps)'
+    if (u.includes('FACULTY')) return 'A1 Lehrer (Web-Apps)'
     return 'Office 365 Web-Apps'
   }
 
