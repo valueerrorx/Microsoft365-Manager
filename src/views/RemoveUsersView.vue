@@ -16,7 +16,7 @@
                     <button class="btn btn-primary" @click="importCsv" :disabled="usersStore.bulkRunning">
                         <i class="bi bi-upload me-1"></i> CSV-Datei importieren
                     </button>
-                    <button v-if="usersStore.batchEntries.length" class="btn btn-outline-secondary" @click="usersStore.batchEntries = []">
+                    <button v-if="usersStore.batchEntries.length" class="btn btn-outline-secondary" @click="usersStore.clearBatchList()">
                         <i class="bi bi-x-circle me-1"></i> Liste leeren
                     </button>
                 </div>
@@ -27,12 +27,14 @@
                         <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.5rem;">
                             <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i> CSV-Format
                         </div>
-                        <pre style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Familienname
-Max;Mustermann
-Anna;Schmidt</pre>
+                        <pre style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Familienname;ID
+Max;Mustermann;101
+Anna;Schmidt;202</pre>
                         <div style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
-                            Nur <strong>Vorname</strong> + <strong>Familienname</strong> werden verwendet. Die Erstell-CSV
-                            (mit Abteilung, Passwort usw.) funktioniert ebenso — Zusatzspalten werden ignoriert.
+                            <strong>Vorname</strong> + <strong>Familienname</strong> für den Abgleich.
+                            Optionale Spalte <strong>ID</strong> (oder <strong>Büro</strong>) → Button
+                            <em>Büro aus ID setzen</em> schreibt den Wert pro Zeile ins Büro-Feld.
+                            Weitere Zusatzspalten werden ignoriert.
                             Der UPN wird daraus exakt wie beim Erstellen gebildet
                             (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
                             und gegen die geladene Benutzerliste abgeglichen.
@@ -106,6 +108,14 @@ Anna;Schmidt</pre>
                             </button>
                             <button
                                 class="btn btn-outline-secondary btn-sm"
+                                :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning || !hasIdColumn"
+                                :title="hasIdColumn ? '' : 'CSV braucht eine ID-Spalte'"
+                                @click="runSetOfficeFromId"
+                            >
+                                <i class="bi bi-door-open me-1"></i> Büro aus ID setzen
+                            </button>
+                            <button
+                                class="btn btn-outline-secondary btn-sm"
                                 :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning"
                                 @click="openSetOffice"
                             >
@@ -129,6 +139,7 @@ Anna;Schmidt</pre>
                                     <th>Nachname</th>
                                     <th>Vorname</th>
                                     <th>Abteilung</th>
+                                    <th>Büro/ID</th>
                                     <th>UPN</th>
                                     <th @click="toggleStatusSort" style="cursor:pointer;user-select:none;">
                                         Status
@@ -142,6 +153,15 @@ Anna;Schmidt</pre>
                                     <td>{{ row.entry.nachname }}</td>
                                     <td>{{ row.entry.vorname }}</td>
                                     <td style="font-size:0.82rem;color:#8b949e;">{{ row.department || '—' }}</td>
+                                    <td style="font-size:0.82rem;color:#8b949e;">
+                                        <span v-if="row.officeLocation" style="font-weight:600;color:#e6edf3;">{{ row.officeLocation }}</span>
+                                        <span v-else>—</span>
+                                        <span
+                                            v-if="row.csvId"
+                                            class="d-block"
+                                            style="font-size:0.72rem;color:#484f58;"
+                                        >{{ row.csvId }}</span>
+                                    </td>
                                     <td style="font-family:monospace;font-size:0.72rem;" :style="{ color: row.candidate ? '#d29922' : (row.status === 'matched' || row.status === 'lazy') ? '#3fb950' : '#8b949e' }">{{ row.upn || '—' }}</td>
                                     <td>
                                         <span v-if="row.status === 'matched'" style="color:#3fb950;font-size:0.8rem;">
@@ -368,7 +388,7 @@ import { ref, computed, reactive } from 'vue'
 import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import { useGroupsStore } from '../stores/groupsStore'
-import { buildUpn, normalizeForUPN } from '../utils/upn.js'
+import { buildUpn, normalizeForUPN, resolveUpnForEntry } from '../utils/upn.js'
 import { cancelRunningPs } from '../utils/cancelPs'
 
 const usersStore = useUsersStore()
@@ -383,6 +403,8 @@ const deptModal = reactive({ show: false, value: '', progress: '' })
 const officeModal = reactive({ show: false, value: '', progress: '' })
 
 const domain = computed(() => authStore.tenantDomain || '')
+
+const hasIdColumn = computed(() => usersStore.batchEntries.some((e) => String(e.id || '').trim()))
 
 // Lowercased UPN -> count, to detect matches/duplicates against the loaded user list.
 const upnCounts = computed(() => {
@@ -449,13 +471,7 @@ const likeNamedAccounts = (entry) => {
 // Stable per-row key so confirmed lazy matches survive recomputes.
 const rowKey = (entry) => `${normalizeForUPN(entry.vorname)}|${normalizeForUPN(entry.nachname)}`
 
-// User-confirmed lazy matches: rowKey -> chosen account UPN.
-// Stored in the users store so confirmations survive view navigation.
-const confirmedMatches = usersStore.batchConfirmedMatches
-
 // Does an account's first-name part plausibly match the CSV first name?
-// allowExact: when the lastname itself is a reduced double-name variant, an exact
-// first-name match is a valid candidate (the full UPN already failed to match anyway).
 function firstNameMatches(accountFirst, vn, vnFirstPart, allowExact) {
     if (accountFirst === vn) return allowExact
     const longer = accountFirst.length >= vn.length ? accountFirst : vn
@@ -499,16 +515,18 @@ function findCandidate(entry) {
 
 // Reconstruct UPN per CSV row (same logic as create) and classify against the user list.
 const rows = computed(() => {
+    const confirmedMatches = usersStore.batchConfirmedMatches
     const built = usersStore.batchEntries.map((entry) => {
-        const upn = buildUpn(entry.vorname, entry.nachname, domain.value)
-        const count = upn ? (upnCounts.value.get(upn.toLowerCase()) || 0) : 0
+        const resolved = resolveUpnForEntry(entry, domain.value, usersStore.users)
+        const upn = resolved.upn || buildUpn(entry.vorname, entry.nachname, domain.value)
+        const count = resolved.count || (upn ? (upnCounts.value.get(upn.toLowerCase()) || 0) : 0)
         const key = rowKey(entry)
         let status = count === 1 ? 'matched' : count > 1 ? 'ambiguous' : 'unmatched'
         let effectiveUpn = upn
         let candidate = null
         // Only run fuzzy logic for rows that didn't match exactly.
         if (status === 'unmatched') {
-            const confirmed = confirmedMatches[key]
+            const confirmed = String(confirmedMatches[key] || '').toLowerCase()
             if (confirmed && upnCounts.value.get(confirmed)) {
                 status = 'lazy'
                 effectiveUpn = confirmed
@@ -552,10 +570,10 @@ const rows = computed(() => {
     }
 
     for (const r of built) {
-        r.department =
-            r.status === 'matched' || r.status === 'lazy'
-                ? userByUpn.value.get(r.upn.toLowerCase())?.department || ''
-                : ''
+        const u = (r.status === 'matched' || r.status === 'lazy') ? userByUpn.value.get(r.upn.toLowerCase()) : null
+        r.department = u?.department || ''
+        r.officeLocation = u?.officeLocation || ''
+        r.csvId = String(r.entry.id || '').trim()
     }
     return built
 })
@@ -609,11 +627,11 @@ const ambiguousRows = computed(() => rows.value.filter((r) => r.status === 'ambi
 
 // Confirm a fuzzy candidate as a real match (used for batch processing).
 function confirmCandidate(row) {
-    if (row.candidate) confirmedMatches[row.key] = row.candidate.upn
+    if (row.candidate) usersStore.batchConfirmedMatches[row.key] = row.candidate.upn
 }
 // Undo a confirmed lazy match.
 function unconfirmMatch(row) {
-    delete confirmedMatches[row.key]
+    delete usersStore.batchConfirmedMatches[row.key]
 }
 
 const filteredGroups = computed(() => {
@@ -753,6 +771,35 @@ async function runSetOffice() {
         officeModal.show = false
     } finally {
         officeModal.progress = ''
+        usersStore.bulkRunning = false
+    }
+}
+
+async function runSetOfficeFromId() {
+    if (!matchedRows.value.length) return
+    usersStore.bulkRunning = true
+    try {
+        let skipped = 0
+        const mappings = matchedRows.value
+            .map((row) => {
+                const officeLocation = String(row.entry.id || '').trim()
+                if (!officeLocation) { skipped++; return null }
+                const u = usersStore.users.find((x) => x.userPrincipalName?.toLowerCase() === row.upn?.toLowerCase())
+                if (u && (u.officeLocation || '') === officeLocation) { skipped++; return null }
+                return { upn: row.upn, officeLocation }
+            })
+            .filter(Boolean)
+
+        if (!mappings.length) {
+            authStore.showToast(skipped ? `Alle ${skipped} bereits gesetzt oder ohne ID` : 'Keine ID-Werte', 'info')
+            return
+        }
+        const { ok, fail } = await usersStore.setOfficeLocationsBatch(mappings)
+        const msg = `Büro aus ID: ${ok}${skipped ? `, übersprungen: ${skipped}` : ''}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
+        if (fail && !ok) authStore.showToast(msg, 'error')
+        else if (fail) authStore.showToast(msg, 'warning')
+        else authStore.showToast(msg, 'success')
+    } finally {
         usersStore.bulkRunning = false
     }
 }

@@ -602,6 +602,7 @@ const PARALLEL_PS_SCRIPTS = new Set([
   'scripts/update-user-licenses.ps1',
   'scripts/set-department.ps1',
   'scripts/set-office-location.ps1',
+  'scripts/set-office-locations.ps1',
   'scripts/update-user.ps1',
   'scripts/set-users-enabled.ps1'
 ])
@@ -929,7 +930,12 @@ function parseCsvText(text) {
     : ','
   const headerParts = header.split(delimiter).map(h => h.trim().toLowerCase())
 
-  const getIdx = (names) => {
+  const getIdx = (names, { exactOnly = false } = {}) => {
+    for (const n of names) {
+      const exact = headerParts.findIndex(h => h === n.toLowerCase())
+      if (exact !== -1) return exact
+    }
+    if (exactOnly) return -1
     for (const n of names) {
       const i = headerParts.findIndex(h => h.includes(n.toLowerCase()))
       if (i !== -1) return i
@@ -951,12 +957,14 @@ function parseCsvText(text) {
     const nni = getIdx(['nachnamenormalized'])
     const ai = getIdx(['abteilung', 'department'])
     const oi = getIdx(['büro', 'buero', 'office', 'officelocation'])
+    const ii = getIdx(['id'], { exactOnly: true })
     const ti = getIdx(['usertype', 'type'])
     const pi = getIdx(['newpassword', 'password', 'passwort'])
     const fi = getIdx(['forcechange', 'force'])
 
     const abteilung = ai >= 0 ? (parts[ai] || '').trim() : ''
     const officeLocation = oi >= 0 ? (parts[oi] || '').trim() : ''
+    const id = ii >= 0 ? (parts[ii] || '').trim() : ''
     const userType = ti >= 0 ? (parts[ti] || '').trim() : 'Schüler'
     const pwd = pi >= 0 ? (parts[pi] || '').trim() : ''
     const forceRaw = fi >= 0 ? (parts[fi] || '').trim() : ''
@@ -969,6 +977,7 @@ function parseCsvText(text) {
       nachnameNormalized: nnorm || normalizeForUPN(nachname),
       abteilung,
       officeLocation,
+      id,
       userType: userType || 'Schüler',
       newPassword: pwd,
       forceChange: forceRaw === '1' || /true/i.test(forceRaw)
@@ -1175,6 +1184,7 @@ ipcMain.handle('set-csv-data', async (_event, data) => {
       nachnameNormalized: normalizeForUPN(nachname),
       abteilung: String(e.abteilung || '').trim(),
       officeLocation: String(e.officeLocation || '').trim(),
+      id: String(e.id || '').trim(),
       userType: String(e.userType || 'Schüler').trim(),
       newPassword: String(e.newPassword || ''),
       forceChange: Boolean(e.forceChange)
@@ -1498,6 +1508,38 @@ ipcMain.handle('set-office-location', async (_event, { upns = [], officeLocation
     }
     const data = parseJsonFromOutput(result.stdout)
     if (!data) return { ...empty, message: result.stderr || 'Fehler beim Batch-Update' }
+    uiSend('ps-operation-complete', { status: data.status, count: list.length })
+    return data
+  } catch (e) {
+    return { ...empty, message: e?.message }
+  }
+})
+
+ipcMain.handle('set-office-locations', async (_event, { mappings = [] } = {}) => {
+  const empty = { status: 'error', message: 'mappings erforderlich', updated: 0, failed: 0, updatedUpns: [], errors: [] }
+  try {
+    const list = (Array.isArray(mappings) ? mappings : [])
+      .map((m) => ({
+        upn: String(m?.upn || '').trim(),
+        officeLocation: String(m?.officeLocation || '').trim()
+      }))
+      .filter((m) => m.upn && m.officeLocation)
+    if (!list.length) return { ...empty, message: 'Keine gültigen Mappings' }
+    const tmpPath = path.join(os.tmpdir(), `office-locations-${Date.now()}.json`)
+    await fs.writeFile(tmpPath, JSON.stringify(list), 'utf8')
+    let data
+    try {
+      const result = await runPsScript('scripts/set-office-locations.ps1', ['-MappingsPath', tmpPath], (log) => {
+        uiSend('ps-operation-log', log)
+      })
+      if (result.exitCode === -1 && !result.stdout) {
+        return { ...empty, message: result.stderr || 'PowerShell konnte nicht gestartet werden' }
+      }
+      data = parseJsonFromOutput(result.stdout)
+      if (!data) return { ...empty, message: result.stderr || 'Fehler beim Batch-Update' }
+    } finally {
+      await fs.unlink(tmpPath).catch(() => {})
+    }
     uiSend('ps-operation-complete', { status: data.status, count: list.length })
     return data
   } catch (e) {

@@ -342,6 +342,40 @@ export const useUsersStore = defineStore('users', {
       }
     },
 
+    // Per-user officeLocation from CSV mappings via Graph $batch.
+    async setOfficeLocationsBatch(mappings) {
+      const auth = useAuthStore()
+      const list = (Array.isArray(mappings) ? mappings : [])
+        .map((m) => ({
+          upn: String(m?.upn || '').trim(),
+          officeLocation: String(m?.officeLocation || '').trim()
+        }))
+        .filter((m) => m.upn && m.officeLocation)
+      if (!list.length) return { ok: 0, fail: 0 }
+      auth.addLog({ type: 'info', message: `Batch-Büro (individuell): ${list.length} Benutzer` })
+      try {
+        const result = await window.ipcRenderer.invoke('set-office-locations', { mappings: list })
+        const updatedUpns = Array.isArray(result.updatedUpns) ? result.updatedUpns : []
+        const errors = Array.isArray(result.errors) ? result.errors : []
+        const officeByUpn = new Map(list.map((m) => [m.upn.toLowerCase(), m.officeLocation]))
+        for (const upn of updatedUpns) {
+          const idx = this.users.findIndex(u => String(u.userPrincipalName || '').toLowerCase() === String(upn).toLowerCase())
+          const office = officeByUpn.get(String(upn).toLowerCase())
+          if (idx !== -1 && office) this.users[idx] = { ...this.users[idx], officeLocation: office }
+        }
+        for (const err of errors) {
+          auth.addLog({ type: 'error', message: `${err.upn}: ${err.message}` })
+        }
+        const ok = updatedUpns.length
+        const fail = errors.length
+        return { ok, fail, message: result.message }
+      } catch (e) {
+        auth.addLog({ type: 'error', message: e.message })
+        auth.showToast(e.message, 'error')
+        return { ok: 0, fail: list.length }
+      }
+    },
+
     // Batch enable/disable via one PS script + Graph $batch (20 PATCHes per request).
     async setUsersEnabledBatch(upns, enabled) {
       const auth = useAuthStore()
@@ -427,6 +461,11 @@ export const useUsersStore = defineStore('users', {
     },
 
     // Import CSV into the batch list (separate from the create flow's csvEntries).
+    clearBatchList() {
+      this.batchEntries = []
+      this.batchConfirmedMatches = {}
+    },
+
     async importBatchCsv() {
       const auth = useAuthStore()
       const result = await window.ipcRenderer.invoke('open-csv-dialog')
