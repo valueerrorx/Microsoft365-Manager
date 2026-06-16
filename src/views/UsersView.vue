@@ -86,6 +86,9 @@
           <button type="button" class="btn btn-outline-primary btn-sm" @click="openBatchSetDept">
             <i class="bi bi-building me-1"></i>Abteilung setzen
           </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" @click="openBatchSetOffice">
+            <i class="bi bi-door-open me-1"></i>Büro setzen
+          </button>
           <button type="button" class="btn btn-outline-danger btn-sm" @click="openBatchDeactivate">
             <i class="bi bi-person-slash me-1"></i>Deaktivieren
           </button>
@@ -129,10 +132,10 @@
                 <input
                   type="checkbox"
                   class="form-check-input"
-                  :checked="allPageSelected"
-                  :indeterminate.prop="pageSelectionIndeterminate"
-                  title="Alle auf dieser Seite"
-                  @change="toggleSelectPage"
+                  :checked="allFilteredSelected"
+                  :indeterminate.prop="filteredSelectionIndeterminate"
+                  title="Alle in der Liste auswählen"
+                  @change="toggleSelectAll"
                 />
               </th>
               <th @click="setSort('displayName')" style="cursor:pointer;user-select:none;">
@@ -166,7 +169,13 @@
                 <div class="d-flex align-items-center gap-2">
                   <div class="user-avatar">{{ initials(nameOf(user)) }}</div>
                   <div>
-                    <div style="font-weight:500;">{{ nameOf(user) }}</div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <span style="font-weight:500;">{{ nameOf(user) }}</span>
+                      <span
+                        v-if="user.officeLocation"
+                        style="font-size:0.72rem;color:#58a6ff;background:rgba(88,166,255,0.1);padding:0.05rem 0.4rem;border-radius:4px;white-space:nowrap;"
+                      >{{ user.officeLocation }}</span>
+                    </div>
                     <div v-if="user.jobTitle" style="font-size:0.73rem;color:#8b949e;">{{ user.jobTitle }}</div>
                   </div>
                 </div>
@@ -284,6 +293,10 @@
               <div class="col-6">
                 <label class="form-label">Jobtitel</label>
                 <input v-model="editForm.jobTitle" type="text" class="form-control" />
+              </div>
+              <div class="col-6">
+                <label class="form-label">Büro</label>
+                <input v-model="editForm.officeLocation" type="text" class="form-control" placeholder="z.B. Raum 101" />
               </div>
               <div class="col-6">
                 <label class="form-label">Nutzungsstandort</label>
@@ -691,6 +704,37 @@
       </div>
     </div>
 
+    <!-- Batch set office -->
+    <div v-if="batchOfficeModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-door-open me-2 text-primary"></i>
+              Büro setzen (Batch)
+            </h5>
+            <button type="button" class="btn-close" :disabled="batchOfficeModal.running" @click="batchOfficeModal.show = false"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">Büro für <strong style="color:#e6edf3;">{{ batchOfficeModal.targets.length }}</strong> Benutzer</label>
+            <input v-model="batchOfficeModal.value" type="text" class="form-control mb-3" placeholder="z. B. Raum 101" :disabled="batchOfficeModal.running" @keyup.enter="runBatchSetOffice" />
+            <ul class="batch-user-list list-unstyled mb-0 small" style="color:#8b949e;">
+              <li v-for="t in batchOfficeModal.targets" :key="t.userPrincipalName" class="py-1 border-bottom border-secondary border-opacity-25">
+                <strong style="color:#e6edf3;">{{ t.displayName }}</strong>
+                <span class="d-block font-monospace" style="font-size:0.78rem;">{{ t.userPrincipalName }}<span v-if="t.officeLocation" class="text-secondary"> — derzeit: {{ t.officeLocation }}</span></span>
+              </li>
+            </ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchOfficeModal.running ? cancelRunningPs() : (batchOfficeModal.show = false)">{{ batchOfficeModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
+            <button type="button" class="btn btn-primary btn-sm" :disabled="batchOfficeModal.running || !batchOfficeModal.value.trim()" @click="runBatchSetOffice">
+              {{ batchOfficeModal.running ? 'Wird ausgeführt...' : 'Büro setzen' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Batch delete -->
     <div v-if="batchDeleteModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
       <div class="modal-dialog modal-lg delete-modal-dialog">
@@ -793,7 +837,8 @@ const filteredUsers = computed(() => {
       nameOf(u).toLowerCase().includes(q) ||
       u.userPrincipalName?.toLowerCase().includes(q) ||
       u.department?.toLowerCase().includes(q) ||
-      u.jobTitle?.toLowerCase().includes(q)
+      u.jobTitle?.toLowerCase().includes(q) ||
+      u.officeLocation?.toLowerCase().includes(q)
     )
   }
   if (filterStatus.value === 'active') list = list.filter(u => u.accountEnabled)
@@ -877,24 +922,23 @@ function toggleUserSelected(upn) {
   }
 }
 
-const allPageSelected = computed(() => {
-  const page = paginatedUsers.value
-  return page.length > 0 && page.every((u) => selectedUpns.value.includes(u.userPrincipalName))
+const allFilteredSelected = computed(() => {
+  const list = filteredUsers.value
+  return list.length > 0 && list.every((u) => selectedUpns.value.includes(u.userPrincipalName))
 })
 
-const pageSelectionIndeterminate = computed(() => {
-  const page = paginatedUsers.value
-  if (!page.length) return false
-  const n = page.filter((u) => selectedUpns.value.includes(u.userPrincipalName)).length
-  return n > 0 && n < page.length
+const filteredSelectionIndeterminate = computed(() => {
+  const list = filteredUsers.value
+  if (!list.length) return false
+  const n = list.filter((u) => selectedUpns.value.includes(u.userPrincipalName)).length
+  return n > 0 && n < list.length
 })
 
-function toggleSelectPage() {
-  const pageUpns = paginatedUsers.value.map((u) => u.userPrincipalName)
-  if (allPageSelected.value) {
-    selectedUpns.value = selectedUpns.value.filter((upn) => !pageUpns.includes(upn))
+function toggleSelectAll() {
+  if (allFilteredSelected.value) {
+    clearSelection()
   } else {
-    selectedUpns.value = [...new Set([...selectedUpns.value, ...pageUpns])]
+    selectedUpns.value = filteredUsers.value.map((u) => u.userPrincipalName)
   }
 }
 
@@ -914,6 +958,7 @@ const batchMfaModal = reactive({ show: false, running: false, targets: [] })
 const batchDeactivateModal = reactive({ show: false, running: false, targets: [] })
 const batchActivateModal = reactive({ show: false, running: false, targets: [] })
 const batchDeptModal = reactive({ show: false, running: false, targets: [], value: '' })
+const batchOfficeModal = reactive({ show: false, running: false, targets: [], value: '' })
 const batchDeleteModal = reactive({
   show: false,
   running: false,
@@ -1121,6 +1166,41 @@ async function runBatchSetDept() {
   clearSelection()
 }
 
+function openBatchSetOffice() {
+  if (selectedUserObjects.value.length < 2) return
+  batchOfficeModal.targets = selectedUserObjects.value.map((u) => ({
+    userPrincipalName: u.userPrincipalName,
+    displayName: u.displayName,
+    officeLocation: u.officeLocation || ''
+  }))
+  batchOfficeModal.value = ''
+  batchOfficeModal.show = true
+}
+
+async function runBatchSetOffice() {
+  const office = batchOfficeModal.value.trim()
+  if (!office) return
+  batchOfficeModal.running = true
+  const upns = batchOfficeModal.targets
+    .filter((t) => (t.officeLocation || '') !== office)
+    .map((t) => t.userPrincipalName)
+  if (!upns.length) {
+    authStore.showToast(`Alle bereits in "${office}"`, 'info')
+    batchOfficeModal.running = false
+    batchOfficeModal.show = false
+    return
+  }
+  const { ok, fail } = await usersStore.setOfficeLocationBatch(upns, office)
+  const skipped = batchOfficeModal.targets.length - upns.length
+  const msg = `Büro gesetzt: ${ok}${skipped ? `, übersprungen: ${skipped}` : ''}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
+  if (fail && !ok) authStore.showToast(msg, 'error')
+  else if (fail) authStore.showToast(msg, 'warning')
+  else authStore.showToast(msg, 'success')
+  batchOfficeModal.running = false
+  batchOfficeModal.show = false
+  clearSelection()
+}
+
 async function runBatchDelete() {
   if (batchDeleteModal.confirmText !== batchDeleteConfirmWord) {
     batchDeleteModal.error = `Bitte "${batchDeleteConfirmWord}" eintippen.`
@@ -1197,7 +1277,7 @@ function licenseFreeTenant(sku) {
 
 // ---- Edit Modal ----
 const editModal = reactive({ show: false, user: null, saving: false })
-const editForm = reactive({ givenName: '', surname: '', displayName: '', department: '', jobTitle: '', accountEnabled: true, usageLocation: '' })
+const editForm = reactive({ givenName: '', surname: '', displayName: '', department: '', jobTitle: '', officeLocation: '', accountEnabled: true, usageLocation: '' })
 const editInitialLicenseIds = ref([])
 const editSelectedLicenseIds = ref([])
 
@@ -1221,6 +1301,7 @@ function openEdit(user) {
   editForm.displayName = user.displayName || ''
   editForm.department = user.department || ''
   editForm.jobTitle = user.jobTitle || ''
+  editForm.officeLocation = user.officeLocation || ''
   editForm.accountEnabled = user.accountEnabled !== false
   editForm.usageLocation = user.usageLocation || ''
   editInitialLicenseIds.value = (user.assignedLicenses || []).map((l) => String(l.skuId)).filter(Boolean)

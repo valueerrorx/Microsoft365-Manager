@@ -91,16 +91,16 @@
     {
       "label": "settings.json",
       "file_type": "code",
-      "source_file": "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Users/.claude/settings.json",
+      "source_file": ".claude/settings.json",
       "source_location": "L1",
-      "id": "home_valueerror_nextcloud_workinprogress_microsoft365_users_claude_settings_json",
+      "id": "claude_settings",
       "community": 86,
       "norm_label": "settings.json"
     },
     {
       "label": "permissions",
       "file_type": "code",
-      "source_file": "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Users/.claude/settings.json",
+      "source_file": ".claude/settings.json",
       "source_location": "L2",
       "id": "claude_settings_permissions",
       "community": 86,
@@ -109,7 +109,7 @@
     {
       "label": "allow",
       "file_type": "code",
-      "source_file": "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Users/.claude/settings.json",
+      "source_file": ".claude/settings.json",
       "source_location": "L3",
       "id": "claude_settings_permissions_allow",
       "community": 86,
@@ -695,7 +695,7 @@
       "label": "psScriptQueueTail",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L603",
+      "source_location": "L609",
       "id": "index_psscriptqueuetail",
       "community": 0,
       "norm_label": "psscriptqueuetail"
@@ -704,7 +704,7 @@
       "label": "activePsProcesses",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L604",
+      "source_location": "L610",
       "id": "index_activepsprocesses",
       "community": 0,
       "norm_label": "activepsprocesses"
@@ -713,7 +713,7 @@
       "label": "trackPsProcess()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L607",
+      "source_location": "L613",
       "id": "index_trackpsprocess",
       "community": 0,
       "norm_label": "trackpsprocess()"
@@ -722,7 +722,7 @@
       "label": "killAllPsProcesses()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L616",
+      "source_location": "L622",
       "id": "index_killallpsprocesses",
       "community": 0,
       "norm_label": "killallpsprocesses()"
@@ -731,7 +731,7 @@
       "label": "clearLegacyGraphPsCacheFiles()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L637",
+      "source_location": "L643",
       "id": "index_clearlegacygraphpscachefiles",
       "community": 0,
       "norm_label": "clearlegacygraphpscachefiles()"
@@ -740,7 +740,7 @@
       "label": "runPsScript()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L662",
+      "source_location": "L668",
       "id": "index_runpsscript",
       "community": 0,
       "norm_label": "runpsscript()"
@@ -749,7 +749,7 @@
       "label": "runPsScriptBody()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L681",
+      "source_location": "L687",
       "id": "index_runpsscriptbody",
       "community": 0,
       "norm_label": "runpsscriptbody()"
@@ -758,7 +758,7 @@
       "label": "parseJsonFromOutput()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L869",
+      "source_location": "L875",
       "id": "index_parsejsonfromoutput",
       "community": 0,
       "norm_label": "parsejsonfromoutput()"
@@ -767,7 +767,7 @@
       "label": "normalizeForUPN()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L886",
+      "source_location": "L892",
       "id": "index_normalizeforupn",
       "community": 0,
       "norm_label": "normalizeforupn()"
@@ -776,7 +776,7 @@
       "label": "decodeCsvBuffer()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L902",
+      "source_location": "L908",
       "id": "index_decodecsvbuffer",
       "community": 0,
       "norm_label": "decodecsvbuffer()"
@@ -785,7 +785,7 @@
       "label": "parseCsvText()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L915",
+      "source_location": "L921",
       "id": "index_parsecsvtext",
       "community": 0,
       "norm_label": "parsecsvtext()"
@@ -794,7 +794,7 @@
       "label": "toSemicolonCsv()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L971",
+      "source_location": "L980",
       "id": "index_tosemicoloncsv",
       "community": 0,
       "norm_label": "tosemicoloncsv()"
@@ -803,7 +803,7 @@
       "label": "graphConsoleEnv()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L1009",
+      "source_location": "L1018",
       "id": "index_graphconsoleenv",
       "community": 0,
       "norm_label": "graphconsoleenv()"
@@ -812,7 +812,7 @@
       "label": "ensureGraphConsole()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L1028",
+      "source_location": "L1037",
       "id": "index_ensuregraphconsole",
       "community": 0,
       "norm_label": "ensuregraphconsole()"
@@ -821,7 +821,7 @@
       "label": "performDisconnectMg365()",
       "file_type": "code",
       "source_file": "index.js",
-      "source_location": "L1111",
+      "source_location": "L1120",
       "id": "index_performdisconnectmg365",
       "community": 0,
       "norm_label": "performdisconnectmg365()"
@@ -1640,7 +1640,7 @@
       "label": "Ensure-Module()",
       "file_type": "code",
       "source_file": "scripts/Mg365-GraphModules.ps1",
-      "source_location": "L50",
+      "source_location": "L51",
       "id": "scripts_mg365_graphmodules_ensure_module",
       "community": 67,
       "norm_label": "ensure-module()"
@@ -2267,6 +2267,24 @@
       "norm_label": "write-jsonresult()"
     },
     {
+      "label": "set-office-location.ps1",
+      "file_type": "code",
+      "source_file": "scripts/set-office-location.ps1",
+      "source_location": "L1",
+      "id": "scripts_set_office_location",
+      "community": 128,
+      "norm_label": "set-office-location.ps1"
+    },
+    {
+      "label": "Write-JsonResult()",
+      "file_type": "code",
+      "source_file": "scripts/set-office-location.ps1",
+      "source_location": "L18",
+      "id": "scripts_set_office_location_write_jsonresult",
+      "community": 128,
+      "norm_label": "write-jsonresult()"
+    },
+    {
       "label": "set-users-enabled.ps1",
       "file_type": "code",
       "source_file": "scripts/set-users-enabled.ps1",
@@ -2317,7 +2335,7 @@
       "source_file": "src/App.vue",
       "source_location": "L1",
       "id": "src_app",
-      "community": 110,
+      "community": 127,
       "norm_label": "app.vue"
     },
     {
@@ -2326,7 +2344,7 @@
       "source_file": "src/App.vue",
       "source_location": "L136",
       "id": "src_app_copydevicecode",
-      "community": 110,
+      "community": 127,
       "norm_label": "copydevicecode()"
     },
     {
@@ -2447,6 +2465,177 @@
       "norm_label": "multiselectfilter.vue"
     },
     {
+      "label": "props",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L46",
+      "id": "components_multiselectfilter_props",
+      "community": 124,
+      "norm_label": "props"
+    },
+    {
+      "label": "emit",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L53",
+      "id": "components_multiselectfilter_emit",
+      "community": 124,
+      "norm_label": "emit"
+    },
+    {
+      "label": "root",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L55",
+      "id": "components_multiselectfilter_root",
+      "community": 124,
+      "norm_label": "root"
+    },
+    {
+      "label": "menu",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L56",
+      "id": "components_multiselectfilter_menu",
+      "community": 124,
+      "norm_label": "menu"
+    },
+    {
+      "label": "open",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L57",
+      "id": "components_multiselectfilter_open",
+      "community": 124,
+      "norm_label": "open"
+    },
+    {
+      "label": "query",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L58",
+      "id": "components_multiselectfilter_query",
+      "community": 124,
+      "norm_label": "query"
+    },
+    {
+      "label": "menuStyle",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L61",
+      "id": "components_multiselectfilter_menustyle",
+      "community": 124,
+      "norm_label": "menustyle"
+    },
+    {
+      "label": "positionMenu()",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L62",
+      "id": "components_multiselectfilter_positionmenu",
+      "community": 124,
+      "norm_label": "positionmenu()"
+    },
+    {
+      "label": "visibleOptions",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L71",
+      "id": "components_multiselectfilter_visibleoptions",
+      "community": 124,
+      "norm_label": "visibleoptions"
+    },
+    {
+      "label": "noneMode",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L78",
+      "id": "components_multiselectfilter_nonemode",
+      "community": 124,
+      "norm_label": "nonemode"
+    },
+    {
+      "label": "selected",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L80",
+      "id": "components_multiselectfilter_selected",
+      "community": 124,
+      "norm_label": "selected"
+    },
+    {
+      "label": "buttonLabel",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L83",
+      "id": "components_multiselectfilter_buttonlabel",
+      "community": 124,
+      "norm_label": "buttonlabel"
+    },
+    {
+      "label": "allMode",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L92",
+      "id": "components_multiselectfilter_allmode",
+      "community": 124,
+      "norm_label": "allmode"
+    },
+    {
+      "label": "toggle()",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L94",
+      "id": "components_multiselectfilter_toggle",
+      "community": 124,
+      "norm_label": "toggle()"
+    },
+    {
+      "label": "clearAll()",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L112",
+      "id": "components_multiselectfilter_clearall",
+      "community": 124,
+      "norm_label": "clearall()"
+    },
+    {
+      "label": "selectNone()",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L114",
+      "id": "components_multiselectfilter_selectnone",
+      "community": 124,
+      "norm_label": "selectnone()"
+    },
+    {
+      "label": "onInvert()",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L118",
+      "id": "components_multiselectfilter_oninvert",
+      "community": 124,
+      "norm_label": "oninvert()"
+    },
+    {
+      "label": "onDocClick()",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L123",
+      "id": "components_multiselectfilter_ondocclick",
+      "community": 124,
+      "norm_label": "ondocclick()"
+    },
+    {
+      "label": "onScroll()",
+      "file_type": "code",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L128",
+      "id": "components_multiselectfilter_onscroll",
+      "community": 124,
+      "norm_label": "onscroll()"
+    },
+    {
       "label": "PasswordInput.vue",
       "file_type": "code",
       "source_file": "src/components/PasswordInput.vue",
@@ -2461,7 +2650,7 @@
       "source_file": "src/main.js",
       "source_location": "L1",
       "id": "src_main",
-      "community": 110,
+      "community": 127,
       "norm_label": "main.js"
     },
     {
@@ -2470,7 +2659,7 @@
       "source_file": "src/main.js",
       "source_location": "L13",
       "id": "src_main_app",
-      "community": 110,
+      "community": 127,
       "norm_label": "app"
     },
     {
@@ -2497,7 +2686,7 @@
       "source_file": "src/stores/authStore.js",
       "source_location": "L1",
       "id": "stores_authstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "authstore.js"
     },
     {
@@ -2506,7 +2695,7 @@
       "source_file": "src/stores/authStore.js",
       "source_location": "L7",
       "id": "stores_authstore_useauthstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "useauthstore"
     },
     {
@@ -2533,7 +2722,7 @@
       "source_file": "src/stores/devicesStore.js",
       "source_location": "L1",
       "id": "stores_devicesstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "devicesstore.js"
     },
     {
@@ -2542,7 +2731,7 @@
       "source_file": "src/stores/devicesStore.js",
       "source_location": "L10",
       "id": "stores_devicesstore_usedevicesstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "usedevicesstore"
     },
     {
@@ -2551,7 +2740,7 @@
       "source_file": "src/stores/groupsStore.js",
       "source_location": "L1",
       "id": "stores_groupsstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "groupsstore.js"
     },
     {
@@ -2560,7 +2749,7 @@
       "source_file": "src/stores/groupsStore.js",
       "source_location": "L9",
       "id": "stores_groupsstore_usegroupsstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "usegroupsstore"
     },
     {
@@ -2569,7 +2758,7 @@
       "source_file": "src/stores/rolesStore.js",
       "source_location": "L1",
       "id": "stores_rolesstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "rolesstore.js"
     },
     {
@@ -2578,7 +2767,7 @@
       "source_file": "src/stores/rolesStore.js",
       "source_location": "L9",
       "id": "stores_rolesstore_normalizeguid",
-      "community": 50,
+      "community": 113,
       "norm_label": "normalizeguid()"
     },
     {
@@ -2587,7 +2776,7 @@
       "source_file": "src/stores/rolesStore.js",
       "source_location": "L13",
       "id": "stores_rolesstore_userolesstore",
-      "community": 50,
+      "community": 113,
       "norm_label": "userolesstore"
     },
     {
@@ -2596,7 +2785,7 @@
       "source_file": "src/stores/sessionReset.js",
       "source_location": "L1",
       "id": "stores_sessionreset",
-      "community": 50,
+      "community": 113,
       "norm_label": "sessionreset.js"
     },
     {
@@ -2605,7 +2794,7 @@
       "source_file": "src/stores/sessionReset.js",
       "source_location": "L4",
       "id": "stores_sessionreset_resetalldatastores",
-      "community": 50,
+      "community": 113,
       "norm_label": "resetalldatastores()"
     },
     {
@@ -2614,7 +2803,7 @@
       "source_file": "src/stores/usersStore.js",
       "source_location": "L1",
       "id": "stores_usersstore",
-      "community": 50,
+      "community": 115,
       "norm_label": "usersstore.js"
     },
     {
@@ -2623,7 +2812,7 @@
       "source_file": "src/stores/usersStore.js",
       "source_location": "L8",
       "id": "stores_usersstore_useusersstore",
-      "community": 50,
+      "community": 115,
       "norm_label": "useusersstore"
     },
     {
@@ -2632,7 +2821,7 @@
       "source_file": "src/utils/cancelPs.js",
       "source_location": "L1",
       "id": "utils_cancelps",
-      "community": 126,
+      "community": 113,
       "norm_label": "cancelps.js"
     },
     {
@@ -2641,7 +2830,7 @@
       "source_file": "src/utils/cancelPs.js",
       "source_location": "L8",
       "id": "utils_cancelps_pscancelrequested",
-      "community": 126,
+      "community": 113,
       "norm_label": "pscancelrequested"
     },
     {
@@ -2650,7 +2839,7 @@
       "source_file": "src/utils/cancelPs.js",
       "source_location": "L13",
       "id": "utils_cancelps_cancelrunningps",
-      "community": 126,
+      "community": 113,
       "norm_label": "cancelrunningps()"
     },
     {
@@ -2668,7 +2857,7 @@
       "source_file": "src/utils/licenseLabel.js",
       "source_location": "L1",
       "id": "utils_licenselabel",
-      "community": 50,
+      "community": 115,
       "norm_label": "licenselabel.js"
     },
     {
@@ -2677,25 +2866,25 @@
       "source_file": "src/utils/licenseLabel.js",
       "source_location": "L5",
       "id": "utils_licenselabel_licenselistsortrank",
-      "community": 50,
+      "community": 115,
       "norm_label": "licenselistsortrank()"
     },
     {
       "label": "a3LicenseBucket()",
       "file_type": "code",
       "source_file": "src/utils/licenseLabel.js",
-      "source_location": "L13",
+      "source_location": "L18",
       "id": "utils_licenselabel_a3licensebucket",
-      "community": 50,
+      "community": 115,
       "norm_label": "a3licensebucket()"
     },
     {
       "label": "humanLicenseLabel()",
       "file_type": "code",
       "source_file": "src/utils/licenseLabel.js",
-      "source_location": "L23",
+      "source_location": "L28",
       "id": "utils_licenselabel_humanlicenselabel",
-      "community": 50,
+      "community": 115,
       "norm_label": "humanlicenselabel()"
     },
     {
@@ -2704,7 +2893,7 @@
       "source_file": "src/utils/passwordValidator.js",
       "source_location": "L1",
       "id": "utils_passwordvalidator",
-      "community": 113,
+      "community": 54,
       "norm_label": "passwordvalidator.js"
     },
     {
@@ -2713,7 +2902,7 @@
       "source_file": "src/utils/passwordValidator.js",
       "source_location": "L9",
       "id": "utils_passwordvalidator_validatepassword",
-      "community": 113,
+      "community": 54,
       "norm_label": "validatepassword()"
     },
     {
@@ -2722,7 +2911,7 @@
       "source_file": "src/utils/passwordValidator.js",
       "source_location": "L25",
       "id": "utils_passwordvalidator_strengthlabels",
-      "community": 113,
+      "community": 54,
       "norm_label": "strengthlabels"
     },
     {
@@ -2731,7 +2920,7 @@
       "source_file": "src/utils/passwordValidator.js",
       "source_location": "L26",
       "id": "utils_passwordvalidator_strengthcolors",
-      "community": 113,
+      "community": 54,
       "norm_label": "strengthcolors"
     },
     {
@@ -2740,7 +2929,7 @@
       "source_file": "src/utils/upn.js",
       "source_location": "L1",
       "id": "utils_upn",
-      "community": 115,
+      "community": 126,
       "norm_label": "upn.js"
     },
     {
@@ -2749,7 +2938,7 @@
       "source_file": "src/utils/upn.js",
       "source_location": "L6",
       "id": "utils_upn_normalizeforupn",
-      "community": 115,
+      "community": 126,
       "norm_label": "normalizeforupn()"
     },
     {
@@ -2758,7 +2947,7 @@
       "source_file": "src/utils/upn.js",
       "source_location": "L21",
       "id": "utils_upn_buildupn",
-      "community": 115,
+      "community": 126,
       "norm_label": "buildupn()"
     },
     {
@@ -2911,7 +3100,7 @@
       "source_file": "src/views/CreateGroupView.vue",
       "source_location": "L1",
       "id": "views_creategroupview",
-      "community": 50,
+      "community": 110,
       "norm_label": "creategroupview.vue"
     },
     {
@@ -2920,7 +3109,7 @@
       "source_file": "src/views/CreateGroupView.vue",
       "source_location": "L71",
       "id": "views_creategroupview_groupsstore",
-      "community": 50,
+      "community": 110,
       "norm_label": "groupsstore"
     },
     {
@@ -2929,7 +3118,7 @@
       "source_file": "src/views/CreateGroupView.vue",
       "source_location": "L72",
       "id": "views_creategroupview_running",
-      "community": 50,
+      "community": 110,
       "norm_label": "running"
     },
     {
@@ -2938,7 +3127,7 @@
       "source_file": "src/views/CreateGroupView.vue",
       "source_location": "L74",
       "id": "views_creategroupview_form",
-      "community": 50,
+      "community": 110,
       "norm_label": "form"
     },
     {
@@ -2947,7 +3136,7 @@
       "source_file": "src/views/CreateGroupView.vue",
       "source_location": "L84",
       "id": "views_creategroupview_autonickname",
-      "community": 50,
+      "community": 110,
       "norm_label": "autonickname"
     },
     {
@@ -2956,7 +3145,7 @@
       "source_file": "src/views/CreateGroupView.vue",
       "source_location": "L88",
       "id": "views_creategroupview_creategroup",
-      "community": 50,
+      "community": 110,
       "norm_label": "creategroup()"
     },
     {
@@ -2972,7 +3161,7 @@
       "label": "usersStore",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L213",
+      "source_location": "L217",
       "id": "views_createusersview_usersstore",
       "community": 54,
       "norm_label": "usersstore"
@@ -2981,7 +3170,7 @@
       "label": "authStore",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L214",
+      "source_location": "L218",
       "id": "views_createusersview_authstore",
       "community": 54,
       "norm_label": "authstore"
@@ -2990,7 +3179,7 @@
       "label": "tab",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L217",
+      "source_location": "L221",
       "id": "views_createusersview_tab",
       "community": 54,
       "norm_label": "tab"
@@ -2999,7 +3188,7 @@
       "label": "pwValid",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L218",
+      "source_location": "L222",
       "id": "views_createusersview_pwvalid",
       "community": 54,
       "norm_label": "pwvalid"
@@ -3008,7 +3197,7 @@
       "label": "singleForm",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L220",
+      "source_location": "L224",
       "id": "views_createusersview_singleform",
       "community": 54,
       "norm_label": "singleform"
@@ -3017,7 +3206,7 @@
       "label": "singlePreview",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L229",
+      "source_location": "L234",
       "id": "views_createusersview_singlepreview",
       "community": 54,
       "norm_label": "singlepreview"
@@ -3026,7 +3215,7 @@
       "label": "entryUpn()",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L240",
+      "source_location": "L245",
       "id": "views_createusersview_entryupn",
       "community": 54,
       "norm_label": "entryupn()"
@@ -3035,7 +3224,7 @@
       "label": "entryError()",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L246",
+      "source_location": "L251",
       "id": "views_createusersview_entryerror",
       "community": 54,
       "norm_label": "entryerror()"
@@ -3044,7 +3233,7 @@
       "label": "createSingleUser()",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L251",
+      "source_location": "L256",
       "id": "views_createusersview_createsingleuser",
       "community": 54,
       "norm_label": "createsingleuser()"
@@ -3053,7 +3242,7 @@
       "label": "importCsv()",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L281",
+      "source_location": "L288",
       "id": "views_createusersview_importcsv",
       "community": 54,
       "norm_label": "importcsv()"
@@ -3062,7 +3251,7 @@
       "label": "addEmptyRow()",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L286",
+      "source_location": "L293",
       "id": "views_createusersview_addemptyrow",
       "community": 54,
       "norm_label": "addemptyrow()"
@@ -3071,7 +3260,7 @@
       "label": "runBulk()",
       "file_type": "code",
       "source_file": "src/views/CreateUsersView.vue",
-      "source_location": "L299",
+      "source_location": "L307",
       "id": "views_createusersview_runbulk",
       "community": 54,
       "norm_label": "runbulk()"
@@ -3431,7 +3620,7 @@
       "label": "licenseFilterOptions",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L668",
+      "source_location": "L671",
       "id": "views_devicesview_licensefilteroptions",
       "community": 74,
       "norm_label": "licensefilteroptions"
@@ -3440,7 +3629,7 @@
       "label": "sortKey",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L672",
+      "source_location": "L675",
       "id": "views_devicesview_sortkey",
       "community": 74,
       "norm_label": "sortkey"
@@ -3449,7 +3638,7 @@
       "label": "sortDir",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L673",
+      "source_location": "L676",
       "id": "views_devicesview_sortdir",
       "community": 74,
       "norm_label": "sortdir"
@@ -3458,7 +3647,7 @@
       "label": "currentPage",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L674",
+      "source_location": "L677",
       "id": "views_devicesview_currentpage",
       "community": 74,
       "norm_label": "currentpage"
@@ -3467,7 +3656,7 @@
       "label": "pageSizeOptions",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L675",
+      "source_location": "L678",
       "id": "views_devicesview_pagesizeoptions",
       "community": 74,
       "norm_label": "pagesizeoptions"
@@ -3476,7 +3665,7 @@
       "label": "pageSize",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L676",
+      "source_location": "L679",
       "id": "views_devicesview_pagesize",
       "community": 74,
       "norm_label": "pagesize"
@@ -3485,7 +3674,7 @@
       "label": "filteredDevices",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L678",
+      "source_location": "L681",
       "id": "views_devicesview_filtereddevices",
       "community": 74,
       "norm_label": "filtereddevices"
@@ -3494,7 +3683,7 @@
       "label": "totalPages",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L741",
+      "source_location": "L746",
       "id": "views_devicesview_totalpages",
       "community": 74,
       "norm_label": "totalpages"
@@ -3503,7 +3692,7 @@
       "label": "paginatedDevices",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L747",
+      "source_location": "L752",
       "id": "views_devicesview_paginateddevices",
       "community": 74,
       "norm_label": "paginateddevices"
@@ -3512,7 +3701,7 @@
       "label": "pageDeviceIds",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L753",
+      "source_location": "L758",
       "id": "views_devicesview_pagedeviceids",
       "community": 74,
       "norm_label": "pagedeviceids"
@@ -3521,7 +3710,7 @@
       "label": "allPageDevicesSelected",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L755",
+      "source_location": "L760",
       "id": "views_devicesview_allpagedevicesselected",
       "community": 74,
       "norm_label": "allpagedevicesselected"
@@ -3530,7 +3719,7 @@
       "label": "pageDevicesSelectionIndeterminate",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L759",
+      "source_location": "L764",
       "id": "views_devicesview_pagedevicesselectionindeterminate",
       "community": 74,
       "norm_label": "pagedevicesselectionindeterminate"
@@ -3539,7 +3728,7 @@
       "label": "isDeviceRowSelected()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L764",
+      "source_location": "L769",
       "id": "views_devicesview_isdevicerowselected",
       "community": 74,
       "norm_label": "isdevicerowselected()"
@@ -3548,7 +3737,7 @@
       "label": "toggleDeviceRowSelected()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L768",
+      "source_location": "L773",
       "id": "views_devicesview_toggledevicerowselected",
       "community": 74,
       "norm_label": "toggledevicerowselected()"
@@ -3557,7 +3746,7 @@
       "label": "toggleSelectDevicesPage()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L776",
+      "source_location": "L781",
       "id": "views_devicesview_toggleselectdevicespage",
       "community": 74,
       "norm_label": "toggleselectdevicespage()"
@@ -3566,7 +3755,7 @@
       "label": "clearDeviceSelection()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L786",
+      "source_location": "L791",
       "id": "views_devicesview_cleardeviceselection",
       "community": 116,
       "norm_label": "cleardeviceselection()"
@@ -3575,7 +3764,7 @@
       "label": "openBulkRetireModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L790",
+      "source_location": "L795",
       "id": "views_devicesview_openbulkretiremodal",
       "community": 74,
       "norm_label": "openbulkretiremodal()"
@@ -3584,7 +3773,7 @@
       "label": "runBulkRetire()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L796",
+      "source_location": "L801",
       "id": "views_devicesview_runbulkretire",
       "community": 116,
       "norm_label": "runbulkretire()"
@@ -3593,7 +3782,7 @@
       "label": "setSort()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L829",
+      "source_location": "L834",
       "id": "views_devicesview_setsort",
       "community": 74,
       "norm_label": "setsort()"
@@ -3602,7 +3791,7 @@
       "label": "sortIcon()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L838",
+      "source_location": "L843",
       "id": "views_devicesview_sorticon",
       "community": 74,
       "norm_label": "sorticon()"
@@ -3611,7 +3800,7 @@
       "label": "dateSortKey()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L843",
+      "source_location": "L848",
       "id": "views_devicesview_datesortkey",
       "community": 74,
       "norm_label": "datesortkey()"
@@ -3620,7 +3809,7 @@
       "label": "boolSortKey()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L849",
+      "source_location": "L854",
       "id": "views_devicesview_boolsortkey",
       "community": 74,
       "norm_label": "boolsortkey()"
@@ -3629,7 +3818,7 @@
       "label": "formatDeviceDateTime()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L855",
+      "source_location": "L860",
       "id": "views_devicesview_formatdevicedatetime",
       "community": 74,
       "norm_label": "formatdevicedatetime()"
@@ -3638,7 +3827,7 @@
       "label": "deviceConfirmTarget()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L862",
+      "source_location": "L867",
       "id": "views_devicesview_deviceconfirmtarget",
       "community": 123,
       "norm_label": "deviceconfirmtarget()"
@@ -3647,7 +3836,7 @@
       "label": "wipeConfirmTarget()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L867",
+      "source_location": "L872",
       "id": "views_devicesview_wipeconfirmtarget",
       "community": 123,
       "norm_label": "wipeconfirmtarget()"
@@ -3656,7 +3845,7 @@
       "label": "wipeConfirmExpected",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L871",
+      "source_location": "L876",
       "id": "views_devicesview_wipeconfirmexpected",
       "community": 74,
       "norm_label": "wipeconfirmexpected"
@@ -3665,7 +3854,7 @@
       "label": "wipeConfirmLabel",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L873",
+      "source_location": "L878",
       "id": "views_devicesview_wipeconfirmlabel",
       "community": 74,
       "norm_label": "wipeconfirmlabel"
@@ -3674,7 +3863,7 @@
       "label": "deleteEntraConfirmExpected",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L879",
+      "source_location": "L884",
       "id": "views_devicesview_deleteentraconfirmexpected",
       "community": 74,
       "norm_label": "deleteentraconfirmexpected"
@@ -3683,7 +3872,7 @@
       "label": "deleteEntraConfirmLabel",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L881",
+      "source_location": "L886",
       "id": "views_devicesview_deleteentraconfirmlabel",
       "community": 74,
       "norm_label": "deleteentraconfirmlabel"
@@ -3692,7 +3881,7 @@
       "label": "openDeleteEntraModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L887",
+      "source_location": "L892",
       "id": "views_devicesview_opendeleteentramodal",
       "community": 74,
       "norm_label": "opendeleteentramodal()"
@@ -3701,7 +3890,7 @@
       "label": "closeDeleteEntraModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L896",
+      "source_location": "L901",
       "id": "views_devicesview_closedeleteentramodal",
       "community": 74,
       "norm_label": "closedeleteentramodal()"
@@ -3710,7 +3899,7 @@
       "label": "runDeleteEntra()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L901",
+      "source_location": "L906",
       "id": "views_devicesview_rundeleteentra",
       "community": 74,
       "norm_label": "rundeleteentra()"
@@ -3719,7 +3908,7 @@
       "label": "openRetireModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L915",
+      "source_location": "L920",
       "id": "views_devicesview_openretiremodal",
       "community": 74,
       "norm_label": "openretiremodal()"
@@ -3728,7 +3917,7 @@
       "label": "runRetire()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L921",
+      "source_location": "L926",
       "id": "views_devicesview_runretire",
       "community": 74,
       "norm_label": "runretire()"
@@ -3737,7 +3926,7 @@
       "label": "openWipeModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L935",
+      "source_location": "L940",
       "id": "views_devicesview_openwipemodal",
       "community": 74,
       "norm_label": "openwipemodal()"
@@ -3746,7 +3935,7 @@
       "label": "openBitlockerModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L941",
+      "source_location": "L946",
       "id": "views_devicesview_openbitlockermodal",
       "community": 74,
       "norm_label": "openbitlockermodal()"
@@ -3755,7 +3944,7 @@
       "label": "openLapsModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L962",
+      "source_location": "L967",
       "id": "views_devicesview_openlapsmodal",
       "community": 74,
       "norm_label": "openlapsmodal()"
@@ -3764,7 +3953,7 @@
       "label": "copyKey()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L988",
+      "source_location": "L993",
       "id": "views_devicesview_copykey",
       "community": 74,
       "norm_label": "copykey()"
@@ -3773,7 +3962,7 @@
       "label": "runWipe()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L992",
+      "source_location": "L997",
       "id": "views_devicesview_runwipe",
       "community": 74,
       "norm_label": "runwipe()"
@@ -3782,7 +3971,7 @@
       "label": "groupPickerModal",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1005",
+      "source_location": "L1010",
       "id": "views_devicesview_grouppickermodal",
       "community": 74,
       "norm_label": "grouppickermodal"
@@ -3791,7 +3980,7 @@
       "label": "groupSearchQuery",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1006",
+      "source_location": "L1011",
       "id": "views_devicesview_groupsearchquery",
       "community": 74,
       "norm_label": "groupsearchquery"
@@ -3800,7 +3989,7 @@
       "label": "filteredDirectoryGroups",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1008",
+      "source_location": "L1013",
       "id": "views_devicesview_filtereddirectorygroups",
       "community": 74,
       "norm_label": "filtereddirectorygroups"
@@ -3809,7 +3998,7 @@
       "label": "selectedGroupDisplayName",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1019",
+      "source_location": "L1024",
       "id": "views_devicesview_selectedgroupdisplayname",
       "community": 74,
       "norm_label": "selectedgroupdisplayname"
@@ -3818,7 +4007,7 @@
       "label": "groupKindLabel()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1026",
+      "source_location": "L1031",
       "id": "views_devicesview_groupkindlabel",
       "community": 74,
       "norm_label": "groupkindlabel()"
@@ -3827,7 +4016,7 @@
       "label": "openAddToGroupModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1033",
+      "source_location": "L1038",
       "id": "views_devicesview_openaddtogroupmodal",
       "community": 74,
       "norm_label": "openaddtogroupmodal()"
@@ -3836,7 +4025,7 @@
       "label": "closeGroupPickerModal()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1043",
+      "source_location": "L1048",
       "id": "views_devicesview_closegrouppickermodal",
       "community": 74,
       "norm_label": "closegrouppickermodal()"
@@ -3845,7 +4034,7 @@
       "label": "runAddDevicesToGroup()",
       "file_type": "code",
       "source_file": "src/views/DevicesView.vue",
-      "source_location": "L1048",
+      "source_location": "L1053",
       "id": "views_devicesview_runadddevicestogroup",
       "community": 116,
       "norm_label": "runadddevicestogroup()"
@@ -3874,8 +4063,395 @@
       "source_file": "src/views/RemoveUsersView.vue",
       "source_location": "L1",
       "id": "views_removeusersview",
-      "community": 110,
+      "community": 126,
       "norm_label": "removeusersview.vue"
+    },
+    {
+      "label": "usersStore",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L374",
+      "id": "views_removeusersview_usersstore",
+      "community": 126,
+      "norm_label": "usersstore"
+    },
+    {
+      "label": "authStore",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L375",
+      "id": "views_removeusersview_authstore",
+      "community": 126,
+      "norm_label": "authstore"
+    },
+    {
+      "label": "groupsStore",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L376",
+      "id": "views_removeusersview_groupsstore",
+      "community": 126,
+      "norm_label": "groupsstore"
+    },
+    {
+      "label": "confirm",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L380",
+      "id": "views_removeusersview_confirm",
+      "community": 126,
+      "norm_label": "confirm"
+    },
+    {
+      "label": "groupModal",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L381",
+      "id": "views_removeusersview_groupmodal",
+      "community": 126,
+      "norm_label": "groupmodal"
+    },
+    {
+      "label": "deptModal",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L382",
+      "id": "views_removeusersview_deptmodal",
+      "community": 126,
+      "norm_label": "deptmodal"
+    },
+    {
+      "label": "officeModal",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L383",
+      "id": "views_removeusersview_officemodal",
+      "community": 126,
+      "norm_label": "officemodal"
+    },
+    {
+      "label": "domain",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L385",
+      "id": "views_removeusersview_domain",
+      "community": 126,
+      "norm_label": "domain"
+    },
+    {
+      "label": "upnCounts",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L388",
+      "id": "views_removeusersview_upncounts",
+      "community": 126,
+      "norm_label": "upncounts"
+    },
+    {
+      "label": "userByUpn",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L398",
+      "id": "views_removeusersview_userbyupn",
+      "community": 126,
+      "norm_label": "userbyupn"
+    },
+    {
+      "label": "usersByLastName",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L408",
+      "id": "views_removeusersview_usersbylastname",
+      "community": 126,
+      "norm_label": "usersbylastname"
+    },
+    {
+      "label": "usersByDisplayName",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L425",
+      "id": "views_removeusersview_usersbydisplayname",
+      "community": 126,
+      "norm_label": "usersbydisplayname"
+    },
+    {
+      "label": "likeNamedAccounts()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L441",
+      "id": "views_removeusersview_likenamedaccounts",
+      "community": 126,
+      "norm_label": "likenamedaccounts()"
+    },
+    {
+      "label": "rowKey()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L450",
+      "id": "views_removeusersview_rowkey",
+      "community": 126,
+      "norm_label": "rowkey()"
+    },
+    {
+      "label": "firstNameMatches()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L459",
+      "id": "views_removeusersview_firstnamematches",
+      "community": 126,
+      "norm_label": "firstnamematches()"
+    },
+    {
+      "label": "findCandidate()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L469",
+      "id": "views_removeusersview_findcandidate",
+      "community": 126,
+      "norm_label": "findcandidate()"
+    },
+    {
+      "label": "rows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L501",
+      "id": "views_removeusersview_rows",
+      "community": 126,
+      "norm_label": "rows"
+    },
+    {
+      "label": "categoryOf()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L564",
+      "id": "views_removeusersview_categoryof",
+      "community": 126,
+      "norm_label": "categoryof()"
+    },
+    {
+      "label": "filters",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L569",
+      "id": "views_removeusersview_filters",
+      "community": 126,
+      "norm_label": "filters"
+    },
+    {
+      "label": "visibleRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L570",
+      "id": "views_removeusersview_visiblerows",
+      "community": 126,
+      "norm_label": "visiblerows"
+    },
+    {
+      "label": "statusSortDir",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L573",
+      "id": "views_removeusersview_statussortdir",
+      "community": 126,
+      "norm_label": "statussortdir"
+    },
+    {
+      "label": "statusRank",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L575",
+      "id": "views_removeusersview_statusrank",
+      "community": 126,
+      "norm_label": "statusrank"
+    },
+    {
+      "label": "rankOf()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L576",
+      "id": "views_removeusersview_rankof",
+      "community": 126,
+      "norm_label": "rankof()"
+    },
+    {
+      "label": "sortedRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L580",
+      "id": "views_removeusersview_sortedrows",
+      "community": 126,
+      "norm_label": "sortedrows"
+    },
+    {
+      "label": "toggleStatusSort()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L597",
+      "id": "views_removeusersview_togglestatussort",
+      "community": 126,
+      "norm_label": "togglestatussort()"
+    },
+    {
+      "label": "matchedRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L602",
+      "id": "views_removeusersview_matchedrows",
+      "community": 126,
+      "norm_label": "matchedrows"
+    },
+    {
+      "label": "lazyRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L603",
+      "id": "views_removeusersview_lazyrows",
+      "community": 126,
+      "norm_label": "lazyrows"
+    },
+    {
+      "label": "unmatchedRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L604",
+      "id": "views_removeusersview_unmatchedrows",
+      "community": 126,
+      "norm_label": "unmatchedrows"
+    },
+    {
+      "label": "fuzzyRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L606",
+      "id": "views_removeusersview_fuzzyrows",
+      "community": 126,
+      "norm_label": "fuzzyrows"
+    },
+    {
+      "label": "noMatchRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L607",
+      "id": "views_removeusersview_nomatchrows",
+      "community": 126,
+      "norm_label": "nomatchrows"
+    },
+    {
+      "label": "ambiguousRows",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L608",
+      "id": "views_removeusersview_ambiguousrows",
+      "community": 126,
+      "norm_label": "ambiguousrows"
+    },
+    {
+      "label": "confirmCandidate()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L611",
+      "id": "views_removeusersview_confirmcandidate",
+      "community": 126,
+      "norm_label": "confirmcandidate()"
+    },
+    {
+      "label": "unconfirmMatch()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L615",
+      "id": "views_removeusersview_unconfirmmatch",
+      "community": 126,
+      "norm_label": "unconfirmmatch()"
+    },
+    {
+      "label": "filteredGroups",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L619",
+      "id": "views_removeusersview_filteredgroups",
+      "community": 126,
+      "norm_label": "filteredgroups"
+    },
+    {
+      "label": "importCsv()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L625",
+      "id": "views_removeusersview_importcsv",
+      "community": 126,
+      "norm_label": "importcsv()"
+    },
+    {
+      "label": "openConfirm()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L630",
+      "id": "views_removeusersview_openconfirm",
+      "community": 126,
+      "norm_label": "openconfirm()"
+    },
+    {
+      "label": "runDelete()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L636",
+      "id": "views_removeusersview_rundelete",
+      "community": 126,
+      "norm_label": "rundelete()"
+    },
+    {
+      "label": "openAddGroup()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L657",
+      "id": "views_removeusersview_openaddgroup",
+      "community": 126,
+      "norm_label": "openaddgroup()"
+    },
+    {
+      "label": "runAddToGroup()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L665",
+      "id": "views_removeusersview_runaddtogroup",
+      "community": 126,
+      "norm_label": "runaddtogroup()"
+    },
+    {
+      "label": "openSetDept()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L680",
+      "id": "views_removeusersview_opensetdept",
+      "community": 126,
+      "norm_label": "opensetdept()"
+    },
+    {
+      "label": "runSetDept()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L687",
+      "id": "views_removeusersview_runsetdept",
+      "community": 126,
+      "norm_label": "runsetdept()"
+    },
+    {
+      "label": "openSetOffice()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L721",
+      "id": "views_removeusersview_opensetoffice",
+      "community": 126,
+      "norm_label": "opensetoffice()"
+    },
+    {
+      "label": "runSetOffice()",
+      "file_type": "code",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L728",
+      "id": "views_removeusersview_runsetoffice",
+      "community": 126,
+      "norm_label": "runsetoffice()"
     },
     {
       "label": "RolesView.vue",
@@ -4403,7 +4979,7 @@
       "label": "Benutzer (`/users`)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L14",
+      "source_location": "L15",
       "id": "readme_benutzer_users",
       "community": 49,
       "norm_label": "benutzer (`/users`)"
@@ -4412,7 +4988,7 @@
       "label": "Gruppen (`/groups`)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L19",
+      "source_location": "L20",
       "id": "readme_gruppen_groups",
       "community": 49,
       "norm_label": "gruppen (`/groups`)"
@@ -4421,7 +4997,7 @@
       "label": "Ger\u00e4te (`/devices`)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L24",
+      "source_location": "L25",
       "id": "readme_ger\u00e4te_devices",
       "community": 49,
       "norm_label": "gerate (`/devices`)"
@@ -4430,7 +5006,7 @@
       "label": "Rollen (`/roles`)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L29",
+      "source_location": "L31",
       "id": "readme_rollen_roles",
       "community": 49,
       "norm_label": "rollen (`/roles`)"
@@ -4439,7 +5015,7 @@
       "label": "Aktionen",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L33",
+      "source_location": "L35",
       "id": "readme_aktionen",
       "community": 49,
       "norm_label": "aktionen"
@@ -4448,7 +5024,7 @@
       "label": "Voraussetzungen",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L40",
+      "source_location": "L46",
       "id": "readme_voraussetzungen",
       "community": 49,
       "norm_label": "voraussetzungen"
@@ -4457,7 +5033,7 @@
       "label": "Installation",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L47",
+      "source_location": "L54",
       "id": "readme_installation",
       "community": 49,
       "norm_label": "installation"
@@ -4466,7 +5042,7 @@
       "label": "CSV-Format (Benutzer anlegen)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L56",
+      "source_location": "L63",
       "id": "readme_csv_format_benutzer_anlegen",
       "community": 49,
       "norm_label": "csv-format (benutzer anlegen)"
@@ -4475,7 +5051,7 @@
       "label": "Kurzanleitung",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L78",
+      "source_location": "L85",
       "id": "readme_kurzanleitung",
       "community": 49,
       "norm_label": "kurzanleitung"
@@ -4484,7 +5060,7 @@
       "label": "Build",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L84",
+      "source_location": "L91",
       "id": "readme_build",
       "community": 49,
       "norm_label": "build"
@@ -4493,7 +5069,7 @@
       "label": "Architektur (kurz)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L92",
+      "source_location": "L99",
       "id": "readme_architektur_kurz",
       "community": 49,
       "norm_label": "architektur (kurz)"
@@ -4502,7 +5078,7 @@
       "label": "Lizenz",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L100",
+      "source_location": "L107",
       "id": "readme_lizenz",
       "community": 49,
       "norm_label": "lizenz"
@@ -5055,15 +5631,6 @@
       "community": 8,
       "norm_label": "ensure-module()",
       "id": "scripts_invoke_intune_device_action_ensure_module"
-    },
-    {
-      "label": "settings.json",
-      "file_type": "code",
-      "source_file": ".claude/settings.json",
-      "source_location": "L1",
-      "community": 86,
-      "norm_label": "settings.json",
-      "id": "claude_settings"
     },
     {
       "label": "settings.local.json",
@@ -6648,16 +7215,6 @@
     }
   ],
   "links": [
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "/home/valueerror/Nextcloud/WORKINPROGRESS/Microsoft365-Users/.claude/settings.json",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "home_valueerror_nextcloud_workinprogress_microsoft365_users_claude_settings_json",
-      "target": "claude_settings_permissions"
-    },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
@@ -10164,6 +10721,16 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "scripts/set-office-location.ps1",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "scripts_set_office_location",
+      "target": "scripts_set_office_location_write_jsonresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "scripts/set-users-enabled.ps1",
       "source_location": "L19",
       "weight": 1.0,
@@ -10291,6 +10858,240 @@
       "confidence_score": 1.0,
       "source": "components_logconsole",
       "target": "components_logconsole_if"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L92",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_allmode"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L83",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_buttonlabel"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L112",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_clearall"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L53",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_emit"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L56",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_menu"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L61",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_menustyle"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L78",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_nonemode"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L123",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_ondocclick"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L118",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_oninvert"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L128",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_onscroll"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L57",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_open"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L62",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_positionmenu"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L46",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_props"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L58",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_query"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L55",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_root"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L80",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_selected"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L114",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_selectnone"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L94",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_toggle"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L71",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter",
+      "target": "components_multiselectfilter_visibleoptions"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L112",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter_clearall",
+      "target": "components_multiselectfilter_emit"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L119",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter_oninvert",
+      "target": "components_multiselectfilter_emit"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L114",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter_selectnone",
+      "target": "components_multiselectfilter_emit"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/MultiSelectFilter.vue",
+      "source_location": "L97",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_multiselectfilter_toggle",
+      "target": "components_multiselectfilter_emit"
     },
     {
       "relation": "imports_from",
@@ -10579,6 +11380,17 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L369",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "stores_authstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/views/RolesView.vue",
       "source_location": "L300",
       "weight": 1.0,
@@ -10678,6 +11490,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L369",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "stores_authstore_useauthstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/views/RolesView.vue",
       "source_location": "L300",
       "weight": 1.0,
@@ -10734,9 +11557,9 @@
       "source_file": "src/stores/devicesStore.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "stores_devicesstore",
-      "target": "utils_cancelps",
-      "confidence_score": 1.0
+      "target": "utils_cancelps"
     },
     {
       "relation": "imports",
@@ -10745,9 +11568,9 @@
       "source_file": "src/stores/devicesStore.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "stores_devicesstore",
-      "target": "utils_cancelps_pscancelrequested",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_pscancelrequested"
     },
     {
       "relation": "imports_from",
@@ -10837,6 +11660,17 @@
       "target": "stores_groupsstore"
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L370",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "stores_groupsstore",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "INFERRED",
@@ -10868,6 +11702,17 @@
       "confidence_score": 1.0,
       "source": "views_dashboardview",
       "target": "stores_groupsstore_usegroupsstore"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L370",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "stores_groupsstore_usegroupsstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -11056,6 +11901,17 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L368",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "stores_usersstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/views/RolesView.vue",
       "source_location": "L302",
       "weight": 1.0,
@@ -11089,6 +11945,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L368",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "stores_usersstore_useusersstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/views/RolesView.vue",
       "source_location": "L302",
       "weight": 1.0,
@@ -11102,9 +11969,9 @@
       "source_file": "src/utils/cancelPs.js",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_cancelps",
-      "target": "utils_cancelps_cancelrunningps",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_cancelrunningps"
     },
     {
       "relation": "contains",
@@ -11112,9 +11979,9 @@
       "source_file": "src/utils/cancelPs.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_cancelps",
-      "target": "utils_cancelps_pscancelrequested",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_pscancelrequested"
     },
     {
       "relation": "contains",
@@ -11122,9 +11989,9 @@
       "source_file": "src/utils/cancelPs.js",
       "source_location": "L23",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_cancelps",
-      "target": "utils_cancelps_resetpscancel",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_resetpscancel"
     },
     {
       "relation": "imports_from",
@@ -11133,9 +12000,9 @@
       "source_file": "src/views/BackupView.vue",
       "source_location": "L174",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_backupview",
-      "target": "utils_cancelps",
-      "confidence_score": 1.0
+      "target": "utils_cancelps"
     },
     {
       "relation": "imports_from",
@@ -11144,7 +12011,18 @@
       "source_file": "src/views/CreateUsersView.vue",
       "source_location": "L211",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_createusersview",
+      "target": "utils_cancelps"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L372",
+      "weight": 1.0,
+      "source": "views_removeusersview",
       "target": "utils_cancelps",
       "confidence_score": 1.0
     },
@@ -11155,9 +12033,9 @@
       "source_file": "src/views/RolesView.vue",
       "source_location": "L304",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_rolesview",
-      "target": "utils_cancelps",
-      "confidence_score": 1.0
+      "target": "utils_cancelps"
     },
     {
       "relation": "imports",
@@ -11166,9 +12044,9 @@
       "source_file": "src/views/RolesView.vue",
       "source_location": "L304",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_rolesview",
-      "target": "utils_cancelps_pscancelrequested",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_pscancelrequested"
     },
     {
       "relation": "imports",
@@ -11177,9 +12055,9 @@
       "source_file": "src/views/BackupView.vue",
       "source_location": "L174",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_backupview",
-      "target": "utils_cancelps_cancelrunningps",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_cancelrunningps"
     },
     {
       "relation": "imports",
@@ -11188,7 +12066,18 @@
       "source_file": "src/views/CreateUsersView.vue",
       "source_location": "L211",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_createusersview",
+      "target": "utils_cancelps_cancelrunningps"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L372",
+      "weight": 1.0,
+      "source": "views_removeusersview",
       "target": "utils_cancelps_cancelrunningps",
       "confidence_score": 1.0
     },
@@ -11199,9 +12088,9 @@
       "source_file": "src/views/RolesView.vue",
       "source_location": "L304",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_rolesview",
-      "target": "utils_cancelps_cancelrunningps",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_cancelrunningps"
     },
     {
       "relation": "imports",
@@ -11210,9 +12099,9 @@
       "source_file": "src/views/RolesView.vue",
       "source_location": "L304",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_rolesview",
-      "target": "utils_cancelps_resetpscancel",
-      "confidence_score": 1.0
+      "target": "utils_cancelps_resetpscancel"
     },
     {
       "relation": "calls",
@@ -11394,6 +12283,17 @@
       "target": "utils_upn"
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L371",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "utils_upn",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -11414,6 +12314,28 @@
       "confidence_score": 1.0,
       "source": "views_createusersview",
       "target": "utils_upn_normalizeforupn"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L371",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "utils_upn_normalizeforupn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L371",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "utils_upn_buildupn",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -12223,9 +13145,9 @@
       "source_file": "src/views/DevicesView.vue",
       "source_location": "L604",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_devicesview",
-      "target": "views_devicesview_lapsmodal",
-      "confidence_score": 1.0
+      "target": "views_devicesview_lapsmodal"
     },
     {
       "relation": "contains",
@@ -12283,9 +13205,9 @@
       "source_file": "src/views/DevicesView.vue",
       "source_location": "L962",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_devicesview",
-      "target": "views_devicesview_openlapsmodal",
-      "confidence_score": 1.0
+      "target": "views_devicesview_openlapsmodal"
     },
     {
       "relation": "contains",
@@ -12649,6 +13571,447 @@
       "confidence_score": 1.0,
       "source": "views_devicesview_wipeconfirmtarget",
       "target": "views_devicesview_deviceconfirmtarget"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L608",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_ambiguousrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L375",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_authstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L564",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_categoryof",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L380",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_confirm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L611",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_confirmcandidate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L382",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_deptmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L385",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_domain",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L619",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_filteredgroups",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L569",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_filters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L469",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_findcandidate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L459",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_firstnamematches",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L606",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_fuzzyrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L381",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_groupmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L376",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_groupsstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L625",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_importcsv",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L603",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_lazyrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L441",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_likenamedaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L602",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_matchedrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L607",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_nomatchrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L383",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_officemodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L657",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_openaddgroup",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L630",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_openconfirm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L680",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_opensetdept",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L721",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_opensetoffice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L576",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_rankof",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L450",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_rowkey",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L501",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_rows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L665",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_runaddtogroup",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L636",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_rundelete",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L687",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_runsetdept",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L728",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_runsetoffice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L580",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_sortedrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L575",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_statusrank",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L573",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_statussortdir",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L597",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_togglestatussort",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L615",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_unconfirmmatch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L604",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_unmatchedrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L388",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_upncounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L398",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_userbyupn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L425",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_usersbydisplayname",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L408",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_usersbylastname",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L374",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_usersstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L570",
+      "weight": 1.0,
+      "source": "views_removeusersview",
+      "target": "views_removeusersview_visiblerows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/views/RemoveUsersView.vue",
+      "source_location": "L482",
+      "weight": 1.0,
+      "source": "views_removeusersview_findcandidate",
+      "target": "views_removeusersview_firstnamematches",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -15029,5 +16392,5 @@
       "source_file": "src/views/DashboardView.vue"
     }
   ],
-  "built_at_commit": "eac9af9a878c77a11ec4ee7852a90c83376f7b12"
+  "built_at_commit": "d0e12dbf6079c1b6a44e54dc9bafb476b85b5ba0"
 }

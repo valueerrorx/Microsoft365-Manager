@@ -1,16 +1,16 @@
-# Graph Report - Microsoft365-Manager  (2026-06-12)
+# Graph Report - Microsoft365-Manager  (2026-06-16)
 
 ## Corpus Check
-- 80 files · ~73,703 words
+- 81 files · ~76,030 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 722 nodes · 811 edges · 127 communities (101 shown, 26 thin omitted)
+- 785 nodes · 889 edges · 129 communities (105 shown, 24 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `eac9af9a`
+- Built from commit: `d0e12dbf`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -64,7 +64,9 @@
 - [[_COMMUNITY_Community 115|Community 115]]
 - [[_COMMUNITY_Community 116|Community 116]]
 - [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 124|Community 124]]
 - [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_Community 127|Community 127]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `performDisconnectMg365()` - 14 edges
@@ -73,9 +75,9 @@
 4. `build` - 12 edges
 5. `Project: MS-365 User Management Dashboard (Electron + Vue + PowerShell/Graph)` - 12 edges
 6. `Project: MS-365 User Management Dashboard (Electron + Vue + PowerShell/Graph)` - 12 edges
-7. `authDebug()` - 10 edges
-8. `runPsScriptBody()` - 10 edges
-9. `useAuthStore` - 10 edges
+7. `useAuthStore` - 11 edges
+8. `authDebug()` - 10 edges
+9. `runPsScriptBody()` - 10 edges
 10. `resetAllDataStores()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -83,18 +85,18 @@
   index.js → graph-device-auth.mjs
 - `performDisconnectMg365()` --calls--> `deletePersistedGraphAuth()`  [INFERRED]
   index.js → graph-device-auth.mjs
+- `resetAllDataStores()` --calls--> `useUsersStore`  [INFERRED]
+  src/stores/sessionReset.js → src/stores/usersStore.js
 - `Connect-Mg365App()` --calls--> `Ensure-Mg365GraphModule()`  [INFERRED]
   scripts/Connect-Mg365App.ps1 → scripts/Mg365-GraphModules.ps1
 - `resetAllDataStores()` --calls--> `useDevicesStore`  [INFERRED]
   src/stores/sessionReset.js → src/stores/devicesStore.js
-- `resetAllDataStores()` --calls--> `useGroupsStore`  [INFERRED]
-  src/stores/sessionReset.js → src/stores/groupsStore.js
 
 ## Import Cycles
-- 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/rolesStore.js -> src/stores/authStore.js`
-- 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/devicesStore.js -> src/stores/authStore.js`
 - 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/groupsStore.js -> src/stores/authStore.js`
+- 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/rolesStore.js -> src/stores/authStore.js`
 - 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/usersStore.js -> src/stores/authStore.js`
+- 3-file cycle: `src/stores/authStore.js -> src/stores/sessionReset.js -> src/stores/devicesStore.js -> src/stores/authStore.js`
 
 ## Hyperedges (group relationships)
 - **IPC-to-PowerShell Execution Bridge** — indexjs_ipc_getusers, indexjs_runpsscript, ps_getms365users [EXTRACTED 1.00]
@@ -104,7 +106,7 @@
 - **Pinia Store Coordination: usersStore calls authStore for logging and toast notifications on every IPC action** — usersstore_usersstore, authstore_authstore, authstore_logs [EXTRACTED 0.98]
 - **License Display Pipeline: usersStore.licenseMap + humanLicenseLabel → UsersView badges & DashboardView bars** — usersstore_getters, licenselabel_humanlicenselabel, dashboardview_licenseoverview [INFERRED 0.88]
 
-## Communities (127 total, 26 thin omitted)
+## Communities (129 total, 24 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.06
@@ -123,8 +125,8 @@ Cohesion: 0.06
 Nodes (39): 1. Verbindung herstellen / Daten laden, 2. Benutzer verwalten (Benutzerliste), 3. Gruppen verwalten, 4. Geräte und Intune-Aktionen, 5. Neue Benutzer anlegen (Einzeln oder CSV), 6. Logs anzeigen, Aktionen, ANSI-Escape-Codes in den Logs (+31 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.08
-Nodes (24): useAuthStore, useDevicesStore, useGroupsStore, useRolesStore, resetAllDataStores(), useUsersStore, a3LicenseBucket(), humanLicenseLabel() (+16 more)
+Cohesion: 0.11
+Nodes (11): authStore, dashboardGroupsLifecycleDisplay, dashboardRefreshing, devicesStore, displayedLicenses, groupsStore, msAdminPortals, pwshWarning (+3 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.05
@@ -139,8 +141,8 @@ Cohesion: 0.06
 Nodes (33): author, dependencies, @azure/identity, @azure/identity-cache-persistence, bootstrap, bootstrap-icons, pinia, vue (+25 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.15
-Nodes (10): authStore, createSingleUser(), entryError(), entryUpn(), normalizeForUPN(), pwValid, singleForm, singlePreview (+2 more)
+Cohesion: 0.12
+Nodes (13): strengthColors, strengthLabels, validatePassword(), authStore, createSingleUser(), entryError(), entryUpn(), normalizeForUPN() (+5 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.07
@@ -190,36 +192,52 @@ Nodes (4): Get-ActivatedDirectoryRoleByTemplateId(), Get-DirectoryRoleUserMember
 Cohesion: 0.12
 Nodes (12): useBackupStore, anyRestoreSelected, anySelected, authStore, backupStore, preview, pwValid, rsel (+4 more)
 
+### Community 110 - "Community 110"
+Cohesion: 0.18
+Nodes (5): routes, autoNickname, form, groupsStore, running
+
 ### Community 112 - "Community 112"
 Cohesion: 0.60
 Nodes (3): Get-GraphAll(), Get-IntuneAssignmentTargets(), Resolve-GroupMailNickname()
 
 ### Community 113 - "Community 113"
-Cohesion: 0.50
-Nodes (3): strengthColors, strengthLabels, validatePassword()
+Cohesion: 0.26
+Nodes (7): useAuthStore, useDevicesStore, useGroupsStore, useRolesStore, resetAllDataStores(), cancelRunningPs(), psCancelRequested
+
+### Community 115 - "Community 115"
+Cohesion: 0.53
+Nodes (4): useUsersStore, a3LicenseBucket(), humanLicenseLabel(), licenseListSortRank()
 
 ### Community 116 - "Community 116"
 Cohesion: 0.67
 Nodes (3): clearDeviceSelection(), runAddDevicesToGroup(), runBulkRetire()
 
+### Community 124 - "Community 124"
+Cohesion: 0.12
+Nodes (16): allMode, buttonLabel, clearAll(), emit, menu, menuStyle, noneMode, onInvert() (+8 more)
+
+### Community 126 - "Community 126"
+Cohesion: 0.05
+Nodes (29): buildUpn(), normalizeForUPN(), ambiguousRows, authStore, confirm, deptModal, domain, filteredGroups (+21 more)
+
 ## Knowledge Gaps
-- **308 isolated node(s):** `allow`, `allow`, `deny`, `GRAPH_DELEGATED_SCOPES`, `__filename` (+303 more)
+- **344 isolated node(s):** `allow`, `allow`, `deny`, `GRAPH_DELEGATED_SCOPES`, `__filename` (+339 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `build` connect `Community 51` to `Community 53`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `useAuthStore` connect `Community 113` to `Community 109`, `Community 50`, `Community 115`, `Community 54`, `Community 57`, `Community 126`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **Why does `performDisconnectMg365()` connect `Community 0` to `Community 62`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `useAuthStore` connect `Community 50` to `Community 57`, `Community 109`, `Community 54`?**
   _High betweenness centrality (0.003) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `performDisconnectMg365()` (e.g. with `deletePersistedGraphAuth()` and `resetGraphCredential()`) actually correct?**
   _`performDisconnectMg365()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `allow`, `allow`, `deny` to the rest of the system?**
-  _308 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _344 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.06128364389233954 - nodes in this community are weakly interconnected._
 - **Should `Community 49` be split into smaller, more focused modules?**

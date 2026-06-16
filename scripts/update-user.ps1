@@ -22,6 +22,9 @@ param(
     [string]$JobTitle,
 
     [Parameter(Mandatory = $false)]
+    [string]$OfficeLocation,
+
+    [Parameter(Mandatory = $false)]
     [string]$AccountEnabled,   # "1" = aktiv, "0" = deaktiviert
 
     [Parameter(Mandatory = $false)]
@@ -60,6 +63,7 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($Surname))     { $updateParams.Surname = $Surname }
     if (-not [string]::IsNullOrWhiteSpace($Department))  { $updateParams.Department = $Department }
     if (-not [string]::IsNullOrWhiteSpace($JobTitle))    { $updateParams.JobTitle = $JobTitle }
+    if (-not [string]::IsNullOrWhiteSpace($OfficeLocation)) { $updateParams.OfficeLocation = $OfficeLocation }
     if (-not [string]::IsNullOrWhiteSpace($UsageLocation)) { $updateParams.UsageLocation = $UsageLocation }
 
     if (-not [string]::IsNullOrWhiteSpace($AccountEnabled)) {
@@ -70,7 +74,7 @@ try {
     Write-Host "Benutzer erfolgreich aktualisiert: $UPN"
 
     # Aktuellen Benutzer-Status abrufen
-    $updatedUser = Get-MgUser -UserId $UPN -Property "id,userPrincipalName,displayName,givenName,surname,department,jobTitle,accountEnabled,usageLocation,mail"
+    $updatedUser = Get-MgUser -UserId $UPN -Property "id,userPrincipalName,displayName,givenName,surname,department,jobTitle,officeLocation,accountEnabled,usageLocation,mail"
 
     $userObj = @{
         id                = $updatedUser.Id
@@ -80,6 +84,7 @@ try {
         surname           = $updatedUser.Surname
         department        = $updatedUser.Department
         jobTitle          = $updatedUser.JobTitle
+        officeLocation    = $updatedUser.OfficeLocation
         accountEnabled    = $updatedUser.AccountEnabled
         usageLocation     = $updatedUser.UsageLocation
         mail              = $updatedUser.Mail

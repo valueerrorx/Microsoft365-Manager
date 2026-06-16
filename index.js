@@ -601,6 +601,7 @@ const PARALLEL_PS_SCRIPTS = new Set([
   // Einzel-Schreibvorgänge: nicht hinter Lese-Ops in der Queue blockieren (eigener Prozess, Graph serialisiert serverseitig).
   'scripts/update-user-licenses.ps1',
   'scripts/set-department.ps1',
+  'scripts/set-office-location.ps1',
   'scripts/update-user.ps1',
   'scripts/set-users-enabled.ps1'
 ])
@@ -949,11 +950,13 @@ function parseCsvText(text) {
     const vni = getIdx(['vornamenormalized'])
     const nni = getIdx(['nachnamenormalized'])
     const ai = getIdx(['abteilung', 'department'])
+    const oi = getIdx(['büro', 'buero', 'office', 'officelocation'])
     const ti = getIdx(['usertype', 'type'])
     const pi = getIdx(['newpassword', 'password', 'passwort'])
     const fi = getIdx(['forcechange', 'force'])
 
     const abteilung = ai >= 0 ? (parts[ai] || '').trim() : ''
+    const officeLocation = oi >= 0 ? (parts[oi] || '').trim() : ''
     const userType = ti >= 0 ? (parts[ti] || '').trim() : 'Schüler'
     const pwd = pi >= 0 ? (parts[pi] || '').trim() : ''
     const forceRaw = fi >= 0 ? (parts[fi] || '').trim() : ''
@@ -965,6 +968,7 @@ function parseCsvText(text) {
       vornameNormalized: vnorm || normalizeForUPN(vorname),
       nachnameNormalized: nnorm || normalizeForUPN(nachname),
       abteilung,
+      officeLocation,
       userType: userType || 'Schüler',
       newPassword: pwd,
       forceChange: forceRaw === '1' || /true/i.test(forceRaw)
@@ -974,12 +978,12 @@ function parseCsvText(text) {
 }
 
 function toSemicolonCsv(entries) {
-  const lines = ['Vorname;Nachname;VornameNormalized;NachnameNormalized;Abteilung;UserType;NewPassword;ForceChange']
+  const lines = ['Vorname;Nachname;VornameNormalized;NachnameNormalized;Abteilung;Büro;UserType;NewPassword;ForceChange']
   for (const e of entries) {
     const esc = (s) => String(s || '').replaceAll(';', ',')
     const vn = e.vornameNormalized || normalizeForUPN(e.vorname || '')
     const nn = e.nachnameNormalized || normalizeForUPN(e.nachname || '')
-    lines.push(`${esc(e.vorname)};${esc(e.nachname)};${vn};${nn};${esc(e.abteilung)};${esc(e.userType)};${esc(e.newPassword)};${e.forceChange ? '1' : '0'}`)
+    lines.push(`${esc(e.vorname)};${esc(e.nachname)};${vn};${nn};${esc(e.abteilung)};${esc(e.officeLocation)};${esc(e.userType)};${esc(e.newPassword)};${e.forceChange ? '1' : '0'}`)
   }
   return lines.join('\n')
 }
@@ -1170,6 +1174,7 @@ ipcMain.handle('set-csv-data', async (_event, data) => {
       vornameNormalized: normalizeForUPN(vorname),
       nachnameNormalized: normalizeForUPN(nachname),
       abteilung: String(e.abteilung || '').trim(),
+      officeLocation: String(e.officeLocation || '').trim(),
       userType: String(e.userType || 'Schüler').trim(),
       newPassword: String(e.newPassword || ''),
       forceChange: Boolean(e.forceChange)
@@ -1401,13 +1406,14 @@ ipcMain.handle('reset-mfa', async (_event, { upn }) => {
 
 ipcMain.handle('update-user', async (_event, params) => {
   try {
-    const { upn, displayName, givenName, surname, department, jobTitle, accountEnabled, usageLocation } = params
+    const { upn, displayName, givenName, surname, department, jobTitle, officeLocation, accountEnabled, usageLocation } = params
     const args = ['-UPN', upn]
     if (displayName !== undefined) args.push('-DisplayName', displayName)
     if (givenName !== undefined) args.push('-GivenName', givenName)
     if (surname !== undefined) args.push('-Surname', surname)
     if (department !== undefined) args.push('-Department', department)
     if (jobTitle !== undefined) args.push('-JobTitle', jobTitle)
+    if (officeLocation !== undefined) args.push('-OfficeLocation', officeLocation)
     if (accountEnabled !== undefined) args.push('-AccountEnabled', accountEnabled ? '1' : '0')
     if (usageLocation !== undefined) args.push('-UsageLocation', usageLocation)
 
@@ -1464,6 +1470,27 @@ ipcMain.handle('set-department', async (_event, { upns = [], department = '' } =
     const dept = String(department || '').trim()
     if (!list.length || !dept) return { ...empty, message: 'upns und department erforderlich' }
     const result = await runPsScript('scripts/set-department.ps1', ['-UPNs', list.join(','), '-Department', dept], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    if (result.exitCode === -1 && !result.stdout) {
+      return { ...empty, message: result.stderr || 'PowerShell konnte nicht gestartet werden' }
+    }
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { ...empty, message: result.stderr || 'Fehler beim Batch-Update' }
+    uiSend('ps-operation-complete', { status: data.status, count: list.length })
+    return data
+  } catch (e) {
+    return { ...empty, message: e?.message }
+  }
+})
+
+ipcMain.handle('set-office-location', async (_event, { upns = [], officeLocation = '' } = {}) => {
+  const empty = { status: 'error', message: 'upns erforderlich', updated: 0, failed: 0, updatedUpns: [], errors: [] }
+  try {
+    const list = Array.isArray(upns) ? upns.map((u) => String(u || '').trim()).filter(Boolean) : []
+    const office = String(officeLocation || '').trim()
+    if (!list.length || !office) return { ...empty, message: 'upns und officeLocation erforderlich' }
+    const result = await runPsScript('scripts/set-office-location.ps1', ['-UPNs', list.join(','), '-OfficeLocation', office], (log) => {
       uiSend('ps-operation-log', log)
     })
     if (result.exitCode === -1 && !result.stdout) {

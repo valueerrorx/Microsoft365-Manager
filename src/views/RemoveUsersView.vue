@@ -105,6 +105,13 @@ Anna;Schmidt</pre>
                                 <i class="bi bi-building me-1"></i> Abteilung setzen
                             </button>
                             <button
+                                class="btn btn-outline-secondary btn-sm"
+                                :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning"
+                                @click="openSetOffice"
+                            >
+                                <i class="bi bi-door-open me-1"></i> Büro setzen
+                            </button>
+                            <button
                                 class="btn btn-danger btn-sm"
                                 :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning"
                                 @click="openConfirm"
@@ -313,6 +320,46 @@ Anna;Schmidt</pre>
                 </div>
             </div>
         </div>
+
+        <!-- Set Office modal -->
+        <div v-if="officeModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-door-open me-2" style="color:#58a6ff;"></i>
+                            Büro setzen
+                        </h5>
+                        <button type="button" class="btn-close" :disabled="usersStore.bulkRunning" @click="officeModal.show = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Neues Büro für {{ matchedRows.length }} Benutzer</label>
+                        <input
+                            v-model="officeModal.value"
+                            type="text"
+                            class="form-control"
+                            placeholder="z.B. Raum 101"
+                            :disabled="usersStore.bulkRunning"
+                        />
+                        <div v-if="officeModal.progress" class="mt-2" style="font-size:0.82rem;color:#8b949e;">
+                            {{ officeModal.progress }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" @click="usersStore.bulkRunning ? cancelRunningPs() : (officeModal.show = false)">{{ usersStore.bulkRunning ? 'Stoppen' : 'Abbrechen' }}</button>
+                        <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            :disabled="!officeModal.value.trim() || usersStore.bulkRunning"
+                            @click="runSetOffice"
+                        >
+                            <i class="bi bi-door-open me-1"></i>
+                            {{ usersStore.bulkRunning ? 'Läuft...' : 'Setzen' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -333,6 +380,7 @@ const confirmWord = 'LÖSCHEN'
 const confirm = reactive({ show: false, text: '' })
 const groupModal = reactive({ show: false, search: '', selectedId: '' })
 const deptModal = reactive({ show: false, value: '', progress: '' })
+const officeModal = reactive({ show: false, value: '', progress: '' })
 
 const domain = computed(() => authStore.tenantDomain || '')
 
@@ -666,6 +714,45 @@ async function runSetDept() {
         deptModal.show = false
     } finally {
         deptModal.progress = ''
+        usersStore.bulkRunning = false
+    }
+}
+
+function openSetOffice() {
+    if (!matchedRows.value.length) return
+    officeModal.value = ''
+    officeModal.progress = ''
+    officeModal.show = true
+}
+
+async function runSetOffice() {
+    const office = officeModal.value.trim()
+    if (!office || !matchedRows.value.length) return
+    usersStore.bulkRunning = true
+    try {
+        let skipped = 0
+        const upns = matchedRows.value
+            .filter((row) => {
+                const u = usersStore.users.find((x) => x.userPrincipalName?.toLowerCase() === row.upn?.toLowerCase())
+                if (u && (u.officeLocation || '') === office) { skipped++; return false }
+                return true
+            })
+            .map((row) => row.upn)
+
+        if (!upns.length) {
+            authStore.showToast(`Alle ${skipped} bereits in "${office}"`, 'info')
+            officeModal.show = false
+            return
+        }
+        officeModal.progress = `${upns.length} werden gesetzt...`
+        const { ok, fail } = await usersStore.setOfficeLocationBatch(upns, office)
+        const msg = `Büro gesetzt: ${ok}${skipped ? `, übersprungen: ${skipped}` : ''}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
+        if (fail && !ok) authStore.showToast(msg, 'error')
+        else if (fail) authStore.showToast(msg, 'warning')
+        else authStore.showToast(msg, 'success')
+        officeModal.show = false
+    } finally {
+        officeModal.progress = ''
         usersStore.bulkRunning = false
     }
 }

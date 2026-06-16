@@ -43,6 +43,10 @@
             <input v-model="singleForm.abteilung" type="text" class="form-control" placeholder="z.B. 3AHIT" />
           </div>
           <div class="col-6">
+            <label class="form-label">Büro</label>
+            <input v-model="singleForm.officeLocation" type="text" class="form-control" placeholder="z.B. Raum 101" />
+          </div>
+          <div class="col-6">
             <label class="form-label">Benutzertyp</label>
             <select v-model="singleForm.userType" class="form-select">
               <option>Schüler</option>
@@ -221,6 +225,7 @@ const singleForm = reactive({
   vorname: '',
   nachname: '',
   abteilung: '',
+  officeLocation: '',
   userType: 'Schüler',
   newPassword: '',
   forceChange: true
@@ -260,6 +265,7 @@ async function createSingleUser() {
     vornameNormalized: vn,
     nachnameNormalized: nn,
     abteilung: singleForm.abteilung,
+    officeLocation: singleForm.officeLocation,
     userType: singleForm.userType,
     newPassword: singleForm.newPassword,
     forceChange: singleForm.forceChange
@@ -274,6 +280,7 @@ async function createSingleUser() {
     singleForm.nachname = ''
     singleForm.newPassword = ''
     singleForm.abteilung = ''
+    singleForm.officeLocation = ''
   }
   usersStore.csvEntries = []
 }
@@ -290,6 +297,7 @@ function addEmptyRow() {
     vornameNormalized: '',
     nachnameNormalized: '',
     abteilung: '',
+    officeLocation: '',
     userType: 'Schüler',
     newPassword: '',
     forceChange: true

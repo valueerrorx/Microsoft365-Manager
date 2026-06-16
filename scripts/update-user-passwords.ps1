@@ -147,6 +147,9 @@ foreach ($row in $csvData) {
     $Vorname = "$($row.Vorname)".Trim()
     $Nachname = "$($row.Nachname)".Trim()
     $Abteilung = "$($row.Abteilung)".Trim()
+    $OfficeLocation = "$($row.'Büro')".Trim()
+    if ([string]::IsNullOrWhiteSpace($OfficeLocation)) { $OfficeLocation = "$($row.Buero)".Trim() }
+    if ([string]::IsNullOrWhiteSpace($OfficeLocation)) { $OfficeLocation = "$($row.OfficeLocation)".Trim() }
     $UserType = "$($row.UserType)".Trim()
     $Password = "$($row.NewPassword)".Trim()
     
@@ -219,6 +222,9 @@ foreach ($row in $csvData) {
         
         if (-not [string]::IsNullOrWhiteSpace($Abteilung)) {
             $newUserParams['Department'] = $Abteilung
+        }
+        if (-not [string]::IsNullOrWhiteSpace($OfficeLocation)) {
+            $newUserParams['OfficeLocation'] = $OfficeLocation
         }
 
         try {
