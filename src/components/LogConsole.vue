@@ -32,6 +32,12 @@
         >Leeren</span>
         <span
           v-if="activeTab === 'powershell'"
+          @click.stop="bookmarksOpen = !bookmarksOpen"
+          style="cursor:pointer;color:#484f58;font-size:0.72rem;"
+          title="Gespeicherte Befehle"
+        >Bookmarks<span v-if="bookmarks.length" style="color:#6e7681;"> ({{ bookmarks.length }})</span></span>
+        <span
+          v-if="activeTab === 'powershell'"
           @click.stop="resetConsole"
           style="cursor:pointer;color:#484f58;font-size:0.72rem;"
           title="Session neu starten"
@@ -67,6 +73,29 @@
 
     <!-- PowerShell-Tab -->
     <div v-show="expanded && activeTab === 'powershell'">
+      <div
+        v-if="bookmarksOpen"
+        class="ps-bookmarks-panel"
+        @click.stop
+      >
+        <div v-if="!bookmarks.length" class="ps-bookmarks-empty">Noch keine Bookmarks.</div>
+        <div
+          v-for="(bm, i) in bookmarks"
+          :key="i"
+          class="ps-bookmark-item"
+        >
+          <span class="ps-bookmark-text" :title="bm" @click="applyBookmark(bm)">{{ bm }}</span>
+          <button
+            type="button"
+            class="ps-bookmark-remove"
+            title="Bookmark entfernen"
+            @click.stop="removeBookmark(i)"
+          >
+            <i class="bi bi-star-fill"></i>
+            <i class="bi bi-dash-lg"></i>
+          </button>
+        </div>
+      </div>
       <div
         class="log-console-body"
         ref="consoleBody"
@@ -117,6 +146,16 @@
           @keydown.up.prevent="historyPrev"
           @keydown.down.prevent="historyNext"
         />
+        <button
+          type="button"
+          class="ps-bookmark-add"
+          title="Als Bookmark speichern"
+          :disabled="!consoleInput.trim()"
+          @click="addBookmark"
+        >
+          <i class="bi bi-star"></i>
+          <i class="bi bi-plus-lg"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -127,6 +166,7 @@ import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 
 const STORAGE_KEY = 'ms365-log-console-body-height'
+const BOOKMARKS_KEY = 'ms365-graph-ps-bookmarks'
 const DEFAULT_HEIGHT = 150
 const MIN_HEIGHT = 64
 
@@ -143,6 +183,8 @@ const consoleBusy = ref(false)
 const consoleBody = ref(null)
 const history = ref([])
 const historyIdx = ref(-1)
+const bookmarks = ref([])
+const bookmarksOpen = ref(false)
 
 function selectTab(tab) {
   activeTab.value = tab
@@ -190,6 +232,38 @@ function resetConsole() {
   window.ipcRenderer.invoke('graph-console-reset')
   consoleLines.value = []
   consoleBusy.value = false
+}
+
+// Persists bookmark list to localStorage.
+function persistBookmarks() {
+  try {
+    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks.value))
+  } catch {}
+}
+
+// Adds current input as bookmark if not already saved.
+function addBookmark() {
+  const cmd = consoleInput.value.trim()
+  if (!cmd || bookmarks.value.includes(cmd)) return
+  bookmarks.value.push(cmd)
+  persistBookmarks()
+}
+
+// Inserts bookmark into input and closes the panel.
+function applyBookmark(cmd) {
+  consoleInput.value = cmd
+  historyIdx.value = history.value.length
+  bookmarksOpen.value = false
+}
+
+// Removes bookmark at index and persists.
+function removeBookmark(index) {
+  bookmarks.value.splice(index, 1)
+  persistBookmarks()
+}
+
+function onDocumentClick() {
+  bookmarksOpen.value = false
 }
 
 // IPC listeners for streamed console output
@@ -253,6 +327,14 @@ onMounted(() => {
   } catch {
     bodyHeightPx.value = clampBody(DEFAULT_HEIGHT)
   }
+  try {
+    const raw = localStorage.getItem(BOOKMARKS_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    bookmarks.value = Array.isArray(parsed) ? parsed.filter((s) => typeof s === 'string' && s.trim()) : []
+  } catch {
+    bookmarks.value = []
+  }
+  document.addEventListener('click', onDocumentClick)
   window.addEventListener('resize', onWindowResize)
   window.ipcRenderer.on('graph-console-output', onConsoleOutput)
   window.ipcRenderer.on('graph-console-done', onConsoleDone)
@@ -260,6 +342,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
   window.removeEventListener('resize', onWindowResize)
   window.removeEventListener('mousemove', onResizeMove)
   window.removeEventListener('mouseup', onResizeEnd)
@@ -335,5 +418,81 @@ watch(() => authStore.logs.length, async () => {
 .ps-ex-cmd {
   color: #7ee787;
   white-space: pre-wrap;
+}
+.ps-bookmarks-panel {
+  max-height: 160px;
+  overflow-y: auto;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  padding: 4px 0;
+}
+.ps-bookmarks-empty {
+  color: #484f58;
+  font-size: 0.72rem;
+  padding: 6px 10px;
+}
+.ps-bookmark-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+}
+.ps-bookmark-item:hover {
+  background: #21262d;
+}
+.ps-bookmark-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #7ee787;
+  font-family: monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.ps-bookmark-add,
+.ps-bookmark-remove {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.ps-bookmark-add:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ps-bookmark-add .bi-star {
+  color: #8b949e;
+  font-size: 0.95rem;
+}
+.ps-bookmark-add .bi-plus-lg {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: 0.55rem;
+  color: #58a6ff;
+  line-height: 1;
+}
+.ps-bookmark-remove .bi-star-fill {
+  color: #d29922;
+  font-size: 0.95rem;
+}
+.ps-bookmark-remove .bi-dash-lg {
+  position: absolute;
+  font-size: 0.7rem;
+  color: #0d1117;
+  font-weight: 700;
+  line-height: 1;
+}
+.ps-bookmark-add:not(:disabled):hover .bi-star {
+  color: #d29922;
 }
 </style>
