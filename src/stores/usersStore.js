@@ -342,26 +342,26 @@ export const useUsersStore = defineStore('users', {
       }
     },
 
-    // Per-user officeLocation from CSV mappings via Graph $batch.
-    async setOfficeLocationsBatch(mappings) {
+    // Per-user jobTitle from CSV ID mappings via Graph $batch.
+    async setJobTitlesBatch(mappings) {
       const auth = useAuthStore()
       const list = (Array.isArray(mappings) ? mappings : [])
         .map((m) => ({
           upn: String(m?.upn || '').trim(),
-          officeLocation: String(m?.officeLocation || '').trim()
+          jobTitle: String(m?.jobTitle || '').trim()
         }))
-        .filter((m) => m.upn && m.officeLocation)
+        .filter((m) => m.upn && m.jobTitle)
       if (!list.length) return { ok: 0, fail: 0 }
-      auth.addLog({ type: 'info', message: `Batch-Büro (individuell): ${list.length} Benutzer` })
+      auth.addLog({ type: 'info', message: `Batch-Funktion (aus ID): ${list.length} Benutzer` })
       try {
-        const result = await window.ipcRenderer.invoke('set-office-locations', { mappings: list })
+        const result = await window.ipcRenderer.invoke('set-job-titles', { mappings: list })
         const updatedUpns = Array.isArray(result.updatedUpns) ? result.updatedUpns : []
         const errors = Array.isArray(result.errors) ? result.errors : []
-        const officeByUpn = new Map(list.map((m) => [m.upn.toLowerCase(), m.officeLocation]))
+        const titleByUpn = new Map(list.map((m) => [m.upn.toLowerCase(), m.jobTitle]))
         for (const upn of updatedUpns) {
           const idx = this.users.findIndex(u => String(u.userPrincipalName || '').toLowerCase() === String(upn).toLowerCase())
-          const office = officeByUpn.get(String(upn).toLowerCase())
-          if (idx !== -1 && office) this.users[idx] = { ...this.users[idx], officeLocation: office }
+          const jobTitle = titleByUpn.get(String(upn).toLowerCase())
+          if (idx !== -1 && jobTitle) this.users[idx] = { ...this.users[idx], jobTitle }
         }
         for (const err of errors) {
           auth.addLog({ type: 'error', message: `${err.upn}: ${err.message}` })

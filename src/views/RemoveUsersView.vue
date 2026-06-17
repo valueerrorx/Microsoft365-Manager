@@ -31,9 +31,9 @@
 Max;Mustermann;101
 Anna;Schmidt;202</pre>
                         <div style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
-                            <strong>Vorname</strong> + <strong>Familienname</strong> für den Abgleich.
-                            Optionale Spalte <strong>ID</strong> (oder <strong>Büro</strong>) → Button
-                            <em>Büro aus ID setzen</em> schreibt den Wert pro Zeile ins Büro-Feld.
+                            Pflicht: <strong>Vorname</strong> + <strong>Familienname</strong> (oder <strong>Nachname</strong>) für den Abgleich.
+                            Optional: Spalte <strong>ID</strong> — Wert wird pro Zeile als <strong>Funktion</strong> (Jobtitel) gesetzt
+                            (<em>Funktion aus ID setzen</em>).
                             Weitere Zusatzspalten werden ignoriert.
                             Der UPN wird daraus exakt wie beim Erstellen gebildet
                             (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
@@ -110,9 +110,9 @@ Anna;Schmidt;202</pre>
                                 class="btn btn-outline-secondary btn-sm"
                                 :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning || !hasIdColumn"
                                 :title="hasIdColumn ? '' : 'CSV braucht eine ID-Spalte'"
-                                @click="runSetOfficeFromId"
+                                @click="runSetJobTitleFromId"
                             >
-                                <i class="bi bi-door-open me-1"></i> Büro aus ID setzen
+                                <i class="bi bi-briefcase me-1"></i> Funktion aus ID setzen
                             </button>
                             <button
                                 class="btn btn-outline-secondary btn-sm"
@@ -139,7 +139,7 @@ Anna;Schmidt;202</pre>
                                     <th>Nachname</th>
                                     <th>Vorname</th>
                                     <th>Abteilung</th>
-                                    <th>Büro/ID</th>
+                                    <th>Funktion/ID</th>
                                     <th>UPN</th>
                                     <th @click="toggleStatusSort" style="cursor:pointer;user-select:none;">
                                         Status
@@ -154,7 +154,7 @@ Anna;Schmidt;202</pre>
                                     <td>{{ row.entry.vorname }}</td>
                                     <td style="font-size:0.82rem;color:#8b949e;">{{ row.department || '—' }}</td>
                                     <td style="font-size:0.82rem;color:#8b949e;">
-                                        <span v-if="row.officeLocation" style="font-weight:600;color:#e6edf3;">{{ row.officeLocation }}</span>
+                                        <span v-if="row.jobTitle" style="font-weight:600;color:#e6edf3;">{{ row.jobTitle }}</span>
                                         <span v-else>—</span>
                                         <span
                                             v-if="row.csvId"
@@ -572,7 +572,7 @@ const rows = computed(() => {
     for (const r of built) {
         const u = (r.status === 'matched' || r.status === 'lazy') ? userByUpn.value.get(r.upn.toLowerCase()) : null
         r.department = u?.department || ''
-        r.officeLocation = u?.officeLocation || ''
+        r.jobTitle = u?.jobTitle || ''
         r.csvId = String(r.entry.id || '').trim()
     }
     return built
@@ -775,18 +775,18 @@ async function runSetOffice() {
     }
 }
 
-async function runSetOfficeFromId() {
+async function runSetJobTitleFromId() {
     if (!matchedRows.value.length) return
     usersStore.bulkRunning = true
     try {
         let skipped = 0
         const mappings = matchedRows.value
             .map((row) => {
-                const officeLocation = String(row.entry.id || '').trim()
-                if (!officeLocation) { skipped++; return null }
+                const jobTitle = String(row.entry.id || '').trim()
+                if (!jobTitle) { skipped++; return null }
                 const u = usersStore.users.find((x) => x.userPrincipalName?.toLowerCase() === row.upn?.toLowerCase())
-                if (u && (u.officeLocation || '') === officeLocation) { skipped++; return null }
-                return { upn: row.upn, officeLocation }
+                if (u && (u.jobTitle || '') === jobTitle) { skipped++; return null }
+                return { upn: row.upn, jobTitle }
             })
             .filter(Boolean)
 
@@ -794,8 +794,8 @@ async function runSetOfficeFromId() {
             authStore.showToast(skipped ? `Alle ${skipped} bereits gesetzt oder ohne ID` : 'Keine ID-Werte', 'info')
             return
         }
-        const { ok, fail } = await usersStore.setOfficeLocationsBatch(mappings)
-        const msg = `Büro aus ID: ${ok}${skipped ? `, übersprungen: ${skipped}` : ''}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
+        const { ok, fail } = await usersStore.setJobTitlesBatch(mappings)
+        const msg = `Funktion aus ID: ${ok}${skipped ? `, übersprungen: ${skipped}` : ''}${fail ? `, fehlgeschlagen: ${fail}` : ''}`
         if (fail && !ok) authStore.showToast(msg, 'error')
         else if (fail) authStore.showToast(msg, 'warning')
         else authStore.showToast(msg, 'success')

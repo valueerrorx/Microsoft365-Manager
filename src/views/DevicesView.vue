@@ -18,51 +18,62 @@
 
     <div class="content-card mb-3">
       <div class="content-card-body py-2">
-        <div class="row g-2 align-items-center">
-          <div class="col-12 col-md-4 col-lg-4">
+        <div class="devices-filter-bar d-flex flex-nowrap align-items-center gap-2">
+          <div class="devices-filter-search flex-shrink-0">
             <div class="input-group input-group-sm">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
-              <input v-model="searchQuery" type="text" class="form-control" placeholder="Name, Besitzer, OS suchen…" />
+              <input v-model="searchQuery" type="text" class="form-control" placeholder="Suchen…" />
               <button v-if="searchQuery" class="btn btn-outline-secondary" type="button" @click="searchQuery = ''">
                 <i class="bi bi-x"></i>
               </button>
             </div>
           </div>
-          <div class="col-6 col-md-2 col-lg-2">
+          <div class="devices-filter-msf flex-shrink-0">
             <MultiSelectFilter
               v-model="filterTrusts"
               v-model:invert="filterTrustsInvert"
               :options="trustOptions"
-              placeholder="Alle Verknüpfungen"
+              placeholder="Verknüpfung: alle"
             />
           </div>
-          <div class="col-6 col-md-2 col-lg-2">
-            <select v-model="filterEnabled" class="form-select form-select-sm" aria-label="Aktiviert filtern">
-              <option value="all">Aktiviert: alle</option>
-              <option value="yes">Aktiviert: Ja</option>
-              <option value="no">Aktiviert: Nein</option>
-            </select>
-          </div>
-          <div class="col-6 col-md-2 col-lg-2">
-            <select v-model="filterCompliant" class="form-select form-select-sm" aria-label="Konformität filtern">
-              <option value="all">Konform: alle</option>
-              <option value="yes">Konform: Ja</option>
-              <option value="no">Konform: Nein</option>
-              <option value="unknown">Konform: unbekannt</option>
-            </select>
-          </div>
-          <div class="col-6 col-md-3 col-lg-2">
+          <select v-model="filterEnabled" class="form-select form-select-sm flex-shrink-0 devices-filter-select" aria-label="Aktiviert filtern">
+            <option value="all">Aktiviert: alle</option>
+            <option value="yes">Aktiviert: Ja</option>
+            <option value="no">Aktiviert: Nein</option>
+          </select>
+          <select v-model="filterCompliant" class="form-select form-select-sm flex-shrink-0 devices-filter-select" aria-label="Konformität filtern">
+            <option value="all">Konform: alle</option>
+            <option value="yes">Konform: Ja</option>
+            <option value="no">Konform: Nein</option>
+            <option value="unknown">Konform: ?</option>
+          </select>
+          <div class="devices-filter-msf flex-shrink-0">
             <MultiSelectFilter
               v-model="filterLicenseSkus"
               v-model:invert="filterLicenseInvert"
               :options="licenseFilterOptions"
-              placeholder="Lizenz Besitzer: alle"
+              placeholder="Lizenz: alle"
               searchable
             />
           </div>
-          <div class="col-auto ms-md-auto">
-            <span style="font-size:0.8rem;color:#8b949e;">{{ filteredDevices.length }} Treffer</span>
+          <div class="devices-filter-msf flex-shrink-0">
+            <MultiSelectFilter
+              v-model="filterDepts"
+              v-model:invert="filterDeptsInvert"
+              :options="deptFilterOptions"
+              placeholder="Abteilung: alle"
+              searchable
+            />
           </div>
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm flex-shrink-0"
+            title="Spalten ein-/ausblenden"
+            @click="columnsModal.show = true"
+          >
+            <i class="bi bi-list-ul"></i>
+          </button>
+          <span class="devices-filter-count flex-shrink-0">{{ filteredDevices.length }} Treffer</span>
         </div>
       </div>
     </div>
@@ -118,34 +129,40 @@
               <th @click="setSort('displayName')" style="cursor:pointer;user-select:none;min-width:9rem;">
                 Gerätename <i class="bi" :class="sortIcon('displayName')"></i>
               </th>
-              <th @click="setSort('accountEnabled')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+              <th v-if="isColVisible('accountEnabled')" @click="setSort('accountEnabled')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Aktiviert <i class="bi" :class="sortIcon('accountEnabled')"></i>
               </th>
-              <th @click="setSort('operatingSystem')" style="cursor:pointer;user-select:none;">
+              <th v-if="isColVisible('operatingSystem')" @click="setSort('operatingSystem')" style="cursor:pointer;user-select:none;">
                 OS <i class="bi" :class="sortIcon('operatingSystem')"></i>
               </th>
-              <th @click="setSort('operatingSystemVersion')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+              <th v-if="isColVisible('operatingSystemVersion')" @click="setSort('operatingSystemVersion')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Version <i class="bi" :class="sortIcon('operatingSystemVersion')"></i>
               </th>
-              <th @click="setSort('trustTypeLabel')" style="cursor:pointer;user-select:none;min-width:10rem;">
+              <th v-if="isColVisible('trustTypeLabel')" @click="setSort('trustTypeLabel')" style="cursor:pointer;user-select:none;min-width:10rem;">
                 Verknüpfung <i class="bi" :class="sortIcon('trustTypeLabel')"></i>
               </th>
-              <th @click="setSort('ownerDisplayName')" style="cursor:pointer;user-select:none;min-width:9rem;">
+              <th v-if="isColVisible('ownerDisplayName')" @click="setSort('ownerDisplayName')" style="cursor:pointer;user-select:none;min-width:9rem;">
                 Besitzer <i class="bi" :class="sortIcon('ownerDisplayName')"></i>
               </th>
-              <th @click="setSort('managementLabel')" style="cursor:pointer;user-select:none;">
+              <th v-if="isColVisible('ownerDepartment')" @click="setSort('ownerDepartment')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+                Abteilung <i class="bi" :class="sortIcon('ownerDepartment')"></i>
+              </th>
+              <th v-if="isColVisible('ownerLicenses')" @click="setSort('ownerLicenses')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+                Lizenz <i class="bi" :class="sortIcon('ownerLicenses')"></i>
+              </th>
+              <th v-if="isColVisible('managementLabel')" @click="setSort('managementLabel')" style="cursor:pointer;user-select:none;">
                 MDM <i class="bi" :class="sortIcon('managementLabel')"></i>
               </th>
-              <th @click="setSort('securityManagementLabel')" style="cursor:pointer;user-select:none;min-width:8rem;">
+              <th v-if="isColVisible('securityManagementLabel')" @click="setSort('securityManagementLabel')" style="cursor:pointer;user-select:none;min-width:8rem;">
                 Sicherheit <i class="bi" :class="sortIcon('securityManagementLabel')"></i>
               </th>
-              <th @click="setSort('isCompliant')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+              <th v-if="isColVisible('isCompliant')" @click="setSort('isCompliant')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Konform <i class="bi" :class="sortIcon('isCompliant')"></i>
               </th>
-              <th @click="setSort('createdDateTime')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+              <th v-if="isColVisible('createdDateTime')" @click="setSort('createdDateTime')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Registriert <i class="bi" :class="sortIcon('createdDateTime')"></i>
               </th>
-              <th @click="setSort('approximateLastSignInDateTime')" style="cursor:pointer;user-select:none;white-space:nowrap;">
+              <th v-if="isColVisible('approximateLastSignInDateTime')" @click="setSort('approximateLastSignInDateTime')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Aktivität <i class="bi" :class="sortIcon('approximateLastSignInDateTime')"></i>
               </th>
               <th style="width:200px;">Aktionen</th>
@@ -164,33 +181,41 @@
               <td>
                 <div style="font-weight:500;">{{ d.displayName || '—' }}</div>
               </td>
-              <td>
+              <td v-if="isColVisible('accountEnabled')">
                 <span v-if="d.accountEnabled" class="badge-active">Ja</span>
                 <span v-else class="badge-inactive">Nein</span>
               </td>
-              <td style="font-size:0.82rem;">{{ d.operatingSystem || '—' }}</td>
-              <td style="font-size:0.82rem;font-family:monospace;color:#8b949e;">{{ d.operatingSystemVersion || '—' }}</td>
-              <td>
+              <td v-if="isColVisible('operatingSystem')" style="font-size:0.82rem;">{{ d.operatingSystem || '—' }}</td>
+              <td v-if="isColVisible('operatingSystemVersion')" style="font-size:0.82rem;font-family:monospace;color:#8b949e;">{{ d.operatingSystemVersion || '—' }}</td>
+              <td v-if="isColVisible('trustTypeLabel')">
                 <span v-if="d.trustType === 'AzureAd'" class="badge-license">{{ d.trustTypeLabel || d.trustType }}</span>
                 <span v-else-if="d.trustType === 'Workplace'" class="badge-entra-registered">{{ d.trustTypeLabel || d.trustType }}</span>
                 <span v-else style="font-size:0.82rem;">{{ d.trustTypeLabel || d.trustType || '—' }}</span>
               </td>
-              <td>
+              <td v-if="isColVisible('ownerDisplayName')">
                 <div style="font-size:0.82rem;">{{ ownerName(d) }}</div>
                 <div v-if="d.ownerUserPrincipalName" style="font-size:0.72rem;color:#8b949e;font-family:monospace;">{{ d.ownerUserPrincipalName }}</div>
               </td>
-              <td>
+              <td v-if="isColVisible('ownerDepartment')" style="font-size:0.82rem;">{{ ownerDepartment(d) || '—' }}</td>
+              <td v-if="isColVisible('ownerLicenses')">
+                <div v-if="ownerLicenses(d).length" class="d-flex flex-wrap gap-1">
+                  <span v-for="label in ownerLicenses(d).slice(0, 2)" :key="label" class="badge-license" style="font-size:0.72rem;">{{ label }}</span>
+                  <span v-if="ownerLicenses(d).length > 2" class="badge-license" style="font-size:0.72rem;">+{{ ownerLicenses(d).length - 2 }}</span>
+                </div>
+                <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
+              </td>
+              <td v-if="isColVisible('managementLabel')">
                 <span v-if="d.managementLabel" class="badge-mdm">{{ d.managementLabel }}</span>
                 <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
               </td>
-              <td style="font-size:0.8rem;">{{ d.securityManagementLabel || '—' }}</td>
-              <td>
+              <td v-if="isColVisible('securityManagementLabel')" style="font-size:0.8rem;">{{ d.securityManagementLabel || '—' }}</td>
+              <td v-if="isColVisible('isCompliant')">
                 <span v-if="d.isCompliant === true" class="badge-active">Ja</span>
                 <span v-else-if="d.isCompliant === false" class="badge-inactive">Nein</span>
                 <span v-else style="color:#484f58;font-size:0.78rem;">—</span>
               </td>
-              <td style="font-size:0.82rem;color:#8b949e;white-space:nowrap;" :title="d.createdDateTime || ''">{{ formatDeviceDateTime(d.createdDateTime) }}</td>
-              <td style="font-size:0.82rem;color:#8b949e;white-space:nowrap;" :title="d.approximateLastSignInDateTime || ''">{{ formatDeviceDateTime(d.approximateLastSignInDateTime) }}</td>
+              <td v-if="isColVisible('createdDateTime')" style="font-size:0.82rem;color:#8b949e;white-space:nowrap;" :title="d.createdDateTime || ''">{{ formatDeviceDateTime(d.createdDateTime) }}</td>
+              <td v-if="isColVisible('approximateLastSignInDateTime')" style="font-size:0.82rem;color:#8b949e;white-space:nowrap;" :title="d.approximateLastSignInDateTime || ''">{{ formatDeviceDateTime(d.approximateLastSignInDateTime) }}</td>
               <td>
                 <div class="d-flex gap-1 flex-wrap">
                   <button
@@ -263,6 +288,41 @@
             <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="currentPage >= totalPages" @click="currentPage++">
               <i class="bi bi-chevron-right"></i>
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column picker -->
+    <div v-if="columnsModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-list-ul me-2" style="color:#58a6ff;"></i>Spalten
+            </h5>
+            <button type="button" class="btn-close" @click="columnsModal.show = false"></button>
+          </div>
+          <div class="modal-body py-2">
+            <label
+              v-for="col in DEVICE_TABLE_COLUMNS"
+              :key="col.key"
+              class="d-flex align-items-center gap-2 py-1 mb-0"
+              style="font-size:0.85rem;cursor:pointer;"
+            >
+              <input
+                type="checkbox"
+                class="form-check-input mt-0"
+                :checked="isColVisible(col.key)"
+                :disabled="col.required"
+                @change="setColVisible(col.key, $event.target.checked)"
+              />
+              <span :style="{ color: col.required ? '#8b949e' : '#e6edf3' }">{{ col.label }}</span>
+            </label>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" @click="resetVisibleColumns">Standard</button>
+            <button type="button" class="btn btn-primary btn-sm" @click="columnsModal.show = false">Fertig</button>
           </div>
         </div>
       </div>
@@ -596,6 +656,46 @@ const groupsStore = useGroupsStore()
 // Statische (nicht-dynamische) Gruppen aus dem geteilten groupsStore — dynamische erlauben kein manuelles Hinzufügen
 const assignableGroups = computed(() => groupsStore.groups.filter((g) => !g.isDynamic))
 
+// Toggleable table columns (checkbox + Aktionen always visible).
+const DEVICE_TABLE_COLUMNS = [
+  { key: 'displayName', label: 'Gerätename', required: true },
+  { key: 'accountEnabled', label: 'Aktiviert', defaultVisible: false },
+  { key: 'operatingSystem', label: 'OS' },
+  { key: 'operatingSystemVersion', label: 'Version', defaultVisible: false },
+  { key: 'trustTypeLabel', label: 'Verknüpfung' },
+  { key: 'ownerDisplayName', label: 'Besitzer' },
+  { key: 'ownerDepartment', label: 'Abteilung' },
+  { key: 'ownerLicenses', label: 'Lizenz', defaultVisible: false },
+  { key: 'managementLabel', label: 'MDM' },
+  { key: 'securityManagementLabel', label: 'Sicherheit' },
+  { key: 'isCompliant', label: 'Konform' },
+  { key: 'createdDateTime', label: 'Registriert', defaultVisible: false },
+  { key: 'approximateLastSignInDateTime', label: 'Aktivität' }
+]
+const DEFAULT_VISIBLE_COLUMNS = DEVICE_TABLE_COLUMNS
+  .filter((c) => c.defaultVisible !== false)
+  .map((c) => c.key)
+const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMNS])
+const columnsModal = reactive({ show: false })
+
+function isColVisible(key) {
+  return visibleColumnKeys.value.includes(key)
+}
+
+function setColVisible(key, on) {
+  const col = DEVICE_TABLE_COLUMNS.find((c) => c.key === key)
+  if (col?.required) return
+  if (on) {
+    if (!visibleColumnKeys.value.includes(key)) visibleColumnKeys.value = [...visibleColumnKeys.value, key]
+  } else {
+    visibleColumnKeys.value = visibleColumnKeys.value.filter((k) => k !== key)
+  }
+}
+
+function resetVisibleColumns() {
+  visibleColumnKeys.value = [...DEFAULT_VISIBLE_COLUMNS]
+}
+
 const retireModal = reactive({ show: false, device: null, disableUserAccount: false, running: false })
 const bulkRetireModal = reactive({ show: false, disableUserAccount: false, running: false, count: 0 })
 const wipeModal = reactive({ show: false, device: null, confirmName: '', running: false })
@@ -618,6 +718,8 @@ const filterEnabled = ref('all')
 const filterCompliant = ref('all')
 const filterLicenseSkus = ref([]) // skuIds des Gerätebesitzers + 'none' (kein/unlizenzierter Besitzer)
 const filterLicenseInvert = ref(false)
+const filterDepts = ref([])
+const filterDeptsInvert = ref(false)
 
 // Feste Verknüpfungstyp-Optionen ('other' = sonstige/leer).
 const trustOptions = [
@@ -647,11 +749,33 @@ const ownerSkuMap = computed(() => {
 })
 
 // Besitzername = "Nachname Vorname" aus dem User-Objekt; Fallback auf den Geräte-Besitzer-Anzeigenamen
-function ownerName(d) {
+function ownerUser(d) {
   const upn = String(d.ownerUserPrincipalName || '').toLowerCase()
-  const u = upn ? userByUpn.value[upn] : null
+  return upn ? userByUpn.value[upn] : null
+}
+
+function ownerName(d) {
+  const u = ownerUser(d)
   const parts = [u?.surname, u?.givenName].filter(Boolean)
   return parts.length ? parts.join(' ') : (d.ownerDisplayName || '—')
+}
+
+function ownerDepartment(d) {
+  return ownerUser(d)?.department || ''
+}
+
+function licenseLabel(skuId) {
+  const sku = usersStore.licenseMap[skuId]
+  if (!sku) return skuId?.slice(0, 8) || '?'
+  return humanLicenseLabel(sku.skuPartNumber)
+}
+
+function ownerLicenses(d) {
+  return (ownerUser(d)?.assignedLicenses || []).map((l) => licenseLabel(l.skuId))
+}
+
+function ownerLicenseSortText(d) {
+  return ownerLicenses(d).join(', ')
 }
 
 // Lizenz-Filteroptionen: nur SKUs die bei mind. einem Gerätebesitzer vorkommen
@@ -672,6 +796,21 @@ const licenseFilterOptions = computed(() => [
   { value: 'none', label: 'Ohne Lizenz / kein Besitzer' },
   ...ownerLicenseOptions.value.map((o) => ({ value: o.skuId, label: o.label }))
 ])
+// Abteilungs-Filteroptionen: nur Abteilungen die bei Gerätebesitzern vorkommen.
+const deptFilterOptions = computed(() => {
+  const depts = new Set()
+  let hasNone = false
+  for (const d of devicesStore.devices) {
+    const upn = String(d.ownerUserPrincipalName || '').toLowerCase()
+    const u = upn ? userByUpn.value[upn] : null
+    if (!u) { hasNone = true; continue }
+    if (u.department) depts.add(u.department)
+    else hasNone = true
+  }
+  const opts = [...depts].sort().map((dep) => ({ value: dep, label: dep }))
+  if (hasNone) opts.push({ value: '__none__', label: '(ohne Abteilung)' })
+  return opts
+})
 const sortKey = ref('displayName')
 const sortDir = ref(1)
 const currentPage = ref(1)
@@ -691,7 +830,9 @@ const filteredDevices = computed(() => {
         (d.operatingSystem || '').toLowerCase().includes(q) ||
         (d.operatingSystemVersion || '').toLowerCase().includes(q) ||
         (d.trustTypeLabel || '').toLowerCase().includes(q) ||
-        (d.managementLabel || '').toLowerCase().includes(q)
+        (d.managementLabel || '').toLowerCase().includes(q) ||
+        ownerDepartment(d).toLowerCase().includes(q) ||
+        ownerLicenseSortText(d).toLowerCase().includes(q)
     )
   }
   if (filterTrusts.value.includes(MSF_NONE)) { if (!filterTrustsInvert.value) list = [] }
@@ -724,6 +865,18 @@ const filteredDevices = computed(() => {
       return filterLicenseInvert.value ? !match : match
     })
   }
+  if (filterDepts.value.includes(MSF_NONE)) { if (!filterDeptsInvert.value) list = [] }
+  else if (filterDepts.value.length) {
+    const want = new Set(filterDepts.value)
+    const wantNone = want.has('__none__')
+    list = list.filter((d) => {
+      const upn = String(d.ownerUserPrincipalName || '').toLowerCase()
+      const u = upn ? userByUpn.value[upn] : null
+      const dept = u?.department || ''
+      const match = (wantNone && !dept) || (dept && want.has(dept))
+      return filterDeptsInvert.value ? !match : match
+    })
+  }
 
   return [...list].sort((a, b) => {
     const key = sortKey.value
@@ -737,8 +890,18 @@ const filteredDevices = computed(() => {
       const bv = dateSortKey(b[key])
       return av < bv ? -sortDir.value : av > bv ? sortDir.value : 0
     }
-    const av = (key === 'ownerDisplayName' ? ownerName(a) : (a[key] || '')).toLowerCase()
-    const bv = (key === 'ownerDisplayName' ? ownerName(b) : (b[key] || '')).toLowerCase()
+    const av = (
+      key === 'ownerDisplayName' ? ownerName(a)
+      : key === 'ownerDepartment' ? ownerDepartment(a)
+      : key === 'ownerLicenses' ? ownerLicenseSortText(a)
+      : (a[key] || '')
+    ).toLowerCase()
+    const bv = (
+      key === 'ownerDisplayName' ? ownerName(b)
+      : key === 'ownerDepartment' ? ownerDepartment(b)
+      : key === 'ownerLicenses' ? ownerLicenseSortText(b)
+      : (b[key] || '')
+    ).toLowerCase()
     return av < bv ? -sortDir.value : av > bv ? sortDir.value : 0
   })
 })
@@ -827,7 +990,7 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 
-watch([filterTrusts, filterTrustsInvert, filterEnabled, filterCompliant, filterLicenseSkus, filterLicenseInvert], () => {
+watch([filterTrusts, filterTrustsInvert, filterEnabled, filterCompliant, filterLicenseSkus, filterLicenseInvert, filterDepts, filterDeptsInvert], () => {
   currentPage.value = 1
 })
 
@@ -1099,5 +1262,35 @@ onMounted(() => {
 }
 .group-picker-row-active {
   background: rgba(88, 166, 255, 0.12);
+}
+.devices-filter-bar {
+  overflow-x: auto;
+  min-width: 0;
+}
+.devices-filter-search {
+  width: 11rem;
+}
+.devices-filter-msf {
+  width: 8.5rem;
+}
+.devices-filter-bar :deep(.msf) {
+  width: 100%;
+}
+.devices-filter-bar :deep(.msf-toggle) {
+  min-width: 0;
+  width: 100%;
+  max-width: 8.5rem;
+}
+.devices-filter-select {
+  width: auto;
+  min-width: 6.75rem;
+  max-width: 8.5rem;
+  white-space: nowrap;
+}
+.devices-filter-count {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: #8b949e;
+  white-space: nowrap;
 }
 </style>

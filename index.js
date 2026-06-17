@@ -602,7 +602,7 @@ const PARALLEL_PS_SCRIPTS = new Set([
   'scripts/update-user-licenses.ps1',
   'scripts/set-department.ps1',
   'scripts/set-office-location.ps1',
-  'scripts/set-office-locations.ps1',
+  'scripts/set-job-titles.ps1',
   'scripts/update-user.ps1',
   'scripts/set-users-enabled.ps1'
 ])
@@ -1515,21 +1515,21 @@ ipcMain.handle('set-office-location', async (_event, { upns = [], officeLocation
   }
 })
 
-ipcMain.handle('set-office-locations', async (_event, { mappings = [] } = {}) => {
+ipcMain.handle('set-job-titles', async (_event, { mappings = [] } = {}) => {
   const empty = { status: 'error', message: 'mappings erforderlich', updated: 0, failed: 0, updatedUpns: [], errors: [] }
   try {
     const list = (Array.isArray(mappings) ? mappings : [])
       .map((m) => ({
         upn: String(m?.upn || '').trim(),
-        officeLocation: String(m?.officeLocation || '').trim()
+        jobTitle: String(m?.jobTitle || '').trim()
       }))
-      .filter((m) => m.upn && m.officeLocation)
+      .filter((m) => m.upn && m.jobTitle)
     if (!list.length) return { ...empty, message: 'Keine gültigen Mappings' }
-    const tmpPath = path.join(os.tmpdir(), `office-locations-${Date.now()}.json`)
+    const tmpPath = path.join(os.tmpdir(), `job-titles-${Date.now()}.json`)
     await fs.writeFile(tmpPath, JSON.stringify(list), 'utf8')
     let data
     try {
-      const result = await runPsScript('scripts/set-office-locations.ps1', ['-MappingsPath', tmpPath], (log) => {
+      const result = await runPsScript('scripts/set-job-titles.ps1', ['-MappingsPath', tmpPath], (log) => {
         uiSend('ps-operation-log', log)
       })
       if (result.exitCode === -1 && !result.stdout) {

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
-# Sets per-user officeLocation via Microsoft Graph $batch (max 20 PATCHes per request)
+# Sets per-user jobTitle via Microsoft Graph $batch (max 20 PATCHes per request)
 param(
     [Parameter(Mandatory = $true)]
     [string]$MappingsPath
@@ -52,8 +52,8 @@ if (-not (Test-Path -LiteralPath $MappingsPath)) {
 }
 
 try {
-  $raw = Get-Content -LiteralPath $MappingsPath -Raw -Encoding UTF8
-  $parsed = $raw | ConvertFrom-Json
+    $raw = Get-Content -LiteralPath $MappingsPath -Raw -Encoding UTF8
+    $parsed = $raw | ConvertFrom-Json
 } catch {
     Write-JsonResult @{
         status      = "error"
@@ -67,9 +67,9 @@ try {
 
 $mappingList = @($parsed) | ForEach-Object {
     $upn = [string]$_.upn
-    $office = [string]$_.officeLocation
-    if (-not [string]::IsNullOrWhiteSpace($upn) -and -not [string]::IsNullOrWhiteSpace($office)) {
-        @{ upn = $upn.Trim(); officeLocation = $office.Trim() }
+    $title = [string]$_.jobTitle
+    if (-not [string]::IsNullOrWhiteSpace($upn) -and -not [string]::IsNullOrWhiteSpace($title)) {
+        @{ upn = $upn.Trim(); jobTitle = $title.Trim() }
     }
 } | Where-Object { $_ }
 
@@ -88,7 +88,7 @@ $updatedUpns = New-Object System.Collections.Generic.List[string]
 $errorItems = New-Object System.Collections.Generic.List[hashtable]
 $batchSize = 20
 
-Write-Host "Setze individuelles Buero fuer $($mappingList.Count) Benutzer (Graph Batch)..."
+Write-Host "Setze individuelle Funktion fuer $($mappingList.Count) Benutzer (Graph Batch)..."
 
 for ($offset = 0; $offset -lt $mappingList.Count; $offset += $batchSize) {
     $chunk = @($mappingList[$offset..([Math]::Min($offset + $batchSize - 1, $mappingList.Count - 1))])
@@ -106,7 +106,7 @@ for ($offset = 0; $offset -lt $mappingList.Count; $offset += $batchSize) {
             method  = "PATCH"
             url     = "/users/$encoded"
             headers = @{ "Content-Type" = "application/json" }
-            body    = @{ officeLocation = $item.officeLocation }
+            body    = @{ jobTitle = $item.jobTitle }
         })
     }
 
@@ -120,7 +120,7 @@ for ($offset = 0; $offset -lt $mappingList.Count; $offset += $batchSize) {
             $statusCode = [int]$r.status
             if ($statusCode -ge 200 -and $statusCode -lt 300) {
                 $updatedUpns.Add($upn)
-                Write-Host "Buero gesetzt: $upn"
+                Write-Host "Funktion gesetzt: $upn"
             } else {
                 $msg = "HTTP $statusCode"
                 if ($r.body -and $r.body.error -and $r.body.error.message) {
@@ -150,7 +150,7 @@ for ($offset = 0; $offset -lt $mappingList.Count; $offset += $batchSize) {
 $updated = $updatedUpns.Count
 $failed = $errorItems.Count
 $status = if ($failed -gt 0 -and $updated -gt 0) { "partial" } elseif ($failed -gt 0) { "error" } else { "ok" }
-$message = "Buero gesetzt: $updated, fehlgeschlagen: $failed"
+$message = "Funktion gesetzt: $updated, fehlgeschlagen: $failed"
 
 Write-JsonResult @{
     status      = $status
