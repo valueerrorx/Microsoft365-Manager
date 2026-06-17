@@ -92,6 +92,15 @@
         <button type="button" class="btn btn-outline-primary btn-sm" @click="openAddToGroupModal">
           <i class="bi bi-people me-1"></i>Zu Gruppe hinzufügen
         </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm"
+          :disabled="!selectedDeviceOwnerUpns.length"
+          :title="selectedDeviceOwnerUpns.length ? 'Besitzer-UPNs kopieren' : 'Keine Besitzer-UPN in der Auswahl'"
+          @click="copyBatchUpns"
+        >
+          <i class="bi bi-envelope me-1"></i>UPN kopieren
+        </button>
         <button type="button" class="btn btn-link btn-sm text-secondary ms-auto p-0" @click="clearDeviceSelection">
           Auswahl aufheben
         </button>
@@ -120,10 +129,10 @@
                 <input
                   type="checkbox"
                   class="form-check-input"
-                  :checked="allPageDevicesSelected"
-                  :indeterminate.prop="pageDevicesSelectionIndeterminate"
-                  title="Alle auf dieser Seite"
-                  @change="toggleSelectDevicesPage"
+                  :checked="allFilteredDevicesSelected"
+                  :indeterminate.prop="filteredDevicesSelectionIndeterminate"
+                  title="Alle in der Liste auswählen"
+                  @change="toggleSelectAll"
                 />
               </th>
               <th @click="setSort('displayName')" style="cursor:pointer;user-select:none;min-width:9rem;">
@@ -645,13 +654,16 @@ import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useDevicesStore } from '../stores/devicesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { useGroupsStore } from '../stores/groupsStore'
+import { useAuthStore } from '../stores/authStore'
 import { humanLicenseLabel, licenseListSortRank } from '../utils/licenseLabel.js'
 import MultiSelectFilter, { MSF_NONE } from '../components/MultiSelectFilter.vue'
 import { cancelRunningPs, resetPsCancel } from '../utils/cancelPs'
+import { copyUpnsToClipboard } from '../utils/copyUpns.js'
 
 const devicesStore = useDevicesStore()
 const usersStore = useUsersStore()
 const groupsStore = useGroupsStore()
+const authStore = useAuthStore()
 
 // Statische (nicht-dynamische) Gruppen aus dem geteilten groupsStore — dynamische erlauben kein manuelles Hinzufügen
 const assignableGroups = computed(() => groupsStore.groups.filter((g) => !g.isDynamic))
@@ -710,6 +722,20 @@ const selectedIntuneDeviceRows = computed(() =>
     .map((id) => devicesStore.devices.find((d) => d.id === id))
     .filter((d) => d?.isIntuneManaged)
 )
+
+// Unique owner UPNs from the current device selection (for batch copy).
+const selectedDeviceOwnerUpns = computed(() => {
+  const seen = new Set()
+  const out = []
+  for (const id of selectedDeviceIds.value) {
+    const upn = String(devicesStore.devices.find((d) => d.id === id)?.ownerUserPrincipalName || '').trim()
+    const key = upn.toLowerCase()
+    if (!upn || seen.has(key)) continue
+    seen.add(key)
+    out.push(upn)
+  }
+  return out
+})
 
 const searchQuery = ref('')
 const filterTrusts = ref([])
@@ -918,15 +944,16 @@ const paginatedDevices = computed(() => {
   return filteredDevices.value.slice(start, start + ps)
 })
 
-const pageDeviceIds = computed(() => paginatedDevices.value.map((d) => d.id).filter(Boolean))
+const allFilteredDevicesSelected = computed(() => {
+  const list = filteredDevices.value
+  return list.length > 0 && list.every((d) => d.id && selectedDeviceIds.value.includes(d.id))
+})
 
-const allPageDevicesSelected = computed(
-  () => pageDeviceIds.value.length > 0 && pageDeviceIds.value.every((id) => selectedDeviceIds.value.includes(id))
-)
-
-const pageDevicesSelectionIndeterminate = computed(() => {
-  const n = pageDeviceIds.value.filter((id) => selectedDeviceIds.value.includes(id)).length
-  return n > 0 && n < pageDeviceIds.value.length
+const filteredDevicesSelectionIndeterminate = computed(() => {
+  const list = filteredDevices.value.filter((d) => d.id)
+  if (!list.length) return false
+  const n = list.filter((d) => selectedDeviceIds.value.includes(d.id)).length
+  return n > 0 && n < list.length
 })
 
 function isDeviceRowSelected(id) {
@@ -941,13 +968,12 @@ function toggleDeviceRowSelected(id) {
   }
 }
 
-function toggleSelectDevicesPage(e) {
-  const checked = e.target.checked
-  const ids = pageDeviceIds.value
-  if (checked) {
-    selectedDeviceIds.value = [...new Set([...selectedDeviceIds.value, ...ids])]
+// Toggle selection for all filtered devices (not just the current page).
+function toggleSelectAll() {
+  if (allFilteredDevicesSelected.value) {
+    clearDeviceSelection()
   } else {
-    selectedDeviceIds.value = selectedDeviceIds.value.filter((id) => !ids.includes(id))
+    selectedDeviceIds.value = filteredDevices.value.map((d) => d.id).filter(Boolean)
   }
 }
 
@@ -1206,6 +1232,11 @@ async function openAddToGroupModal() {
   groupPickerModal.running = false
   groupPickerModal.show = true
   if (!groupsStore.groups.length && !groupsStore.loading) await groupsStore.fetchGroupsDetail()
+}
+
+async function copyBatchUpns() {
+  if (selectedDeviceIds.value.length < 2) return
+  await copyUpnsToClipboard(selectedDeviceOwnerUpns.value, authStore.showToast.bind(authStore))
 }
 
 function closeGroupPickerModal() {

@@ -342,6 +342,42 @@ export const useUsersStore = defineStore('users', {
       }
     },
 
+    // Batch-assign one license SKU via Graph $batch (20 assignLicense per request).
+    async setUserLicensesBatch(upns, skuId, opts = {}) {
+      const quietToast = opts.quietToast === true
+      const auth = useAuthStore()
+      const list = Array.isArray(upns) ? upns.filter(Boolean) : []
+      const sku = String(skuId || '').trim()
+      if (!list.length || !sku) return { ok: 0, fail: 0 }
+      auth.addLog({ type: 'info', message: `Batch-Lizenz ${sku}: ${list.length} Benutzer` })
+      try {
+        const result = await window.ipcRenderer.invoke('set-user-licenses-batch', { upns: list, skuId: sku })
+        const updatedUpns = Array.isArray(result.updatedUpns) ? result.updatedUpns : []
+        const errors = Array.isArray(result.errors) ? result.errors : []
+        for (const upn of updatedUpns) {
+          const idx = this.users.findIndex(u => String(u.userPrincipalName || '').toLowerCase() === String(upn).toLowerCase())
+          if (idx === -1) continue
+          this.users[idx] = { ...this.users[idx], assignedLicenses: [{ skuId: sku }] }
+        }
+        for (const err of errors) {
+          auth.addLog({ type: 'error', message: `${err.upn}: ${err.message}` })
+        }
+        const ok = updatedUpns.length
+        const fail = errors.length
+        if (!quietToast) {
+          const msg = result.message || `Lizenz ersetzt: ${ok} OK${fail ? `, ${fail} fehlgeschlagen` : ''}`
+          if (fail && !ok) auth.showToast(msg, 'error')
+          else if (fail) auth.showToast(msg, 'warning')
+          else auth.showToast(msg, 'success')
+        }
+        return { ok, fail, message: result.message, errors }
+      } catch (e) {
+        auth.addLog({ type: 'error', message: e.message })
+        if (!quietToast) auth.showToast(e.message, 'error')
+        return { ok: 0, fail: list.length }
+      }
+    },
+
     // Per-user jobTitle from CSV ID mappings via Graph $batch.
     async setJobTitlesBatch(mappings) {
       const auth = useAuthStore()

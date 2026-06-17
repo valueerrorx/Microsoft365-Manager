@@ -603,6 +603,7 @@ const PARALLEL_PS_SCRIPTS = new Set([
   'scripts/set-department.ps1',
   'scripts/set-office-location.ps1',
   'scripts/set-job-titles.ps1',
+  'scripts/set-user-licenses-batch.ps1',
   'scripts/update-user.ps1',
   'scripts/set-users-enabled.ps1'
 ])
@@ -1508,6 +1509,27 @@ ipcMain.handle('set-office-location', async (_event, { upns = [], officeLocation
     }
     const data = parseJsonFromOutput(result.stdout)
     if (!data) return { ...empty, message: result.stderr || 'Fehler beim Batch-Update' }
+    uiSend('ps-operation-complete', { status: data.status, count: list.length })
+    return data
+  } catch (e) {
+    return { ...empty, message: e?.message }
+  }
+})
+
+ipcMain.handle('set-user-licenses-batch', async (_event, { upns = [], skuId = '' } = {}) => {
+  const empty = { status: 'error', message: 'upns erforderlich', updated: 0, failed: 0, updatedUpns: [], errors: [], skuId: '' }
+  try {
+    const list = Array.isArray(upns) ? upns.map((u) => String(u || '').trim()).filter(Boolean) : []
+    const sku = String(skuId || '').trim()
+    if (!list.length || !sku) return { ...empty, message: 'upns und skuId erforderlich' }
+    const result = await runPsScript('scripts/set-user-licenses-batch.ps1', ['-UPNs', list.join(','), '-SkuId', sku], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    if (result.exitCode === -1 && !result.stdout) {
+      return { ...empty, message: result.stderr || 'PowerShell konnte nicht gestartet werden' }
+    }
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) return { ...empty, message: result.stderr || 'Fehler beim Batch-Lizenzen' }
     uiSend('ps-operation-complete', { status: data.status, count: list.length })
     return data
   } catch (e) {

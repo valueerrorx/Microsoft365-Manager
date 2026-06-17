@@ -89,6 +89,12 @@
           <button type="button" class="btn btn-outline-primary btn-sm" @click="openBatchSetOffice">
             <i class="bi bi-door-open me-1"></i>Büro setzen
           </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" @click="openBatchSetLicense">
+            <i class="bi bi-key me-1"></i>Lizenz zuweisen
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" @click="copyBatchUpns">
+            <i class="bi bi-envelope me-1"></i>UPN kopieren
+          </button>
           <button type="button" class="btn btn-outline-danger btn-sm" @click="openBatchDeactivate">
             <i class="bi bi-person-slash me-1"></i>Deaktivieren
           </button>
@@ -704,6 +710,54 @@
       </div>
     </div>
 
+    <!-- Batch assign license -->
+    <div v-if="batchLicenseModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-key me-2 text-primary"></i>
+              Lizenz zuweisen (Batch)
+            </h5>
+            <button type="button" class="btn-close" :disabled="batchLicenseModal.running" @click="batchLicenseModal.show = false"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">Lizenz für <strong style="color:#e6edf3;">{{ batchLicenseModal.targets.length }}</strong> Benutzer</label>
+            <select v-model="batchLicenseModal.skuId" class="form-select mb-2" :disabled="batchLicenseModal.running || !usersStore.licenses.length">
+              <option value="">— Lizenz wählen —</option>
+              <option v-for="sku in usersStore.licenses" :key="sku.skuId" :value="sku.skuId">
+                {{ licenseLabel(sku.skuId) }} — {{ licenseFreeTenant(sku) }} frei im Tenant
+              </option>
+            </select>
+            <div class="alert py-2 px-3 mb-2" style="background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.2);color:#8b949e;font-size:0.83rem;">
+              Alle anderen Lizenzen der ausgewählten Benutzer werden entfernt — am Ende nur die gewählte SKU.
+            </div>
+            <div v-if="batchLicenseModal.noUsageCount" class="alert py-2 px-3 mb-2" style="background:rgba(210,153,34,0.1);border:1px solid rgba(210,153,34,0.25);color:#d29922;font-size:0.83rem;">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ batchLicenseModal.noUsageCount }} ohne Nutzungsstandort — werden übersprungen.
+            </div>
+            <ul class="batch-user-list list-unstyled mb-0 small" style="color:#8b949e;max-height:240px;overflow-y:auto;">
+              <li v-for="t in batchLicenseModal.targets" :key="t.userPrincipalName" class="py-1 border-bottom border-secondary border-opacity-25">
+                <strong style="color:#e6edf3;">{{ t.displayName }}</strong>
+                <span class="d-block font-monospace" style="font-size:0.78rem;">
+                  {{ t.userPrincipalName }}
+                  <span v-if="!t.usageLocation" class="text-warning"> — kein Nutzungsstandort</span>
+                  <span v-else-if="t.onlyTargetSku" class="text-secondary"> — hat bereits nur diese Lizenz</span>
+                  <span v-else-if="t.otherLicenseCount" class="text-secondary"> — {{ t.otherLicenseCount }} andere Lizenz(en) werden entfernt</span>
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" @click="batchLicenseModal.running ? cancelRunningPs() : (batchLicenseModal.show = false)">{{ batchLicenseModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
+            <button type="button" class="btn btn-primary btn-sm" :disabled="batchLicenseModal.running || !batchLicenseModal.skuId" @click="runBatchSetLicense">
+              {{ batchLicenseModal.running ? 'Wird ausgeführt...' : 'Lizenz zuweisen' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Batch set office -->
     <div v-if="batchOfficeModal.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
       <div class="modal-dialog modal-lg">
@@ -791,6 +845,7 @@ import MultiSelectFilter, { MSF_NONE } from '../components/MultiSelectFilter.vue
 import { validatePassword } from '../utils/passwordValidator.js'
 import { humanLicenseLabel } from '../utils/licenseLabel.js'
 import { cancelRunningPs, resetPsCancel, psCancelRequested } from '../utils/cancelPs'
+import { copyUpnsToClipboard } from '../utils/copyUpns.js'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
@@ -959,6 +1014,7 @@ const batchDeactivateModal = reactive({ show: false, running: false, targets: []
 const batchActivateModal = reactive({ show: false, running: false, targets: [] })
 const batchDeptModal = reactive({ show: false, running: false, targets: [], value: '' })
 const batchOfficeModal = reactive({ show: false, running: false, targets: [], value: '' })
+const batchLicenseModal = reactive({ show: false, running: false, targets: [], skuId: '', noUsageCount: 0 })
 const batchDeleteModal = reactive({
   show: false,
   running: false,
@@ -1175,6 +1231,76 @@ function openBatchSetOffice() {
   }))
   batchOfficeModal.value = ''
   batchOfficeModal.show = true
+}
+
+async function openBatchSetLicense() {
+  if (selectedUserObjects.value.length < 2) return
+  if (!usersStore.licenses.length && !usersStore.licensesLoading) {
+    await usersStore.fetchLicenses({ quietToast: true })
+  }
+  batchLicenseModal.skuId = ''
+  batchLicenseModal.targets = selectedUserObjects.value.map((u) => ({
+    userPrincipalName: u.userPrincipalName,
+    displayName: u.displayName || u.userPrincipalName,
+    usageLocation: u.usageLocation || '',
+    onlyTargetSku: false,
+    otherLicenseCount: 0
+  }))
+  batchLicenseModal.noUsageCount = 0
+  batchLicenseModal.show = true
+}
+
+function refreshBatchLicenseTargets() {
+  const skuId = String(batchLicenseModal.skuId || '')
+  batchLicenseModal.targets = selectedUserObjects.value.map((u) => {
+    const ids = (u.assignedLicenses || []).map((l) => String(l.skuId))
+    const onlyTargetSku = skuId && ids.length === 1 && ids[0] === skuId
+    const otherLicenseCount = skuId ? ids.filter((id) => id !== skuId).length : 0
+    return {
+      userPrincipalName: u.userPrincipalName,
+      displayName: u.displayName || u.userPrincipalName,
+      usageLocation: u.usageLocation || '',
+      onlyTargetSku,
+      otherLicenseCount
+    }
+  })
+  batchLicenseModal.noUsageCount = batchLicenseModal.targets.filter((t) => !String(t.usageLocation || '').trim()).length
+}
+
+watch(() => batchLicenseModal.skuId, () => {
+  if (batchLicenseModal.show) refreshBatchLicenseTargets()
+})
+
+async function runBatchSetLicense() {
+  const skuId = String(batchLicenseModal.skuId || '').trim()
+  if (!skuId) return
+  refreshBatchLicenseTargets()
+  const upns = batchLicenseModal.targets
+    .filter((t) => String(t.usageLocation || '').trim())
+    .filter((t) => !t.onlyTargetSku)
+    .map((t) => t.userPrincipalName)
+  const skippedUsage = batchLicenseModal.noUsageCount
+  const skippedOk = batchLicenseModal.targets.filter((t) => t.onlyTargetSku && String(t.usageLocation || '').trim()).length
+  if (!upns.length) {
+    authStore.showToast('Keine Benutzer zum Zuweisen (alle übersprungen).', 'warning')
+    return
+  }
+  batchLicenseModal.running = true
+  const { ok, fail } = await usersStore.setUserLicensesBatch(upns, skuId, { quietToast: true })
+  if (ok) void usersStore.fetchLicenses({ quietToast: true })
+  const msg = `Lizenz: ${ok} ersetzt${skippedOk ? `, ${skippedOk} hatten sie bereits` : ''}${skippedUsage ? `, ${skippedUsage} ohne Nutzungsstandort` : ''}${fail ? `, ${fail} fehlgeschlagen` : ''}`
+  if (fail && !ok) authStore.showToast(msg, 'error')
+  else if (fail || skippedUsage || skippedOk) authStore.showToast(msg, 'warning')
+  else authStore.showToast(msg, 'success')
+  batchLicenseModal.running = false
+  batchLicenseModal.show = false
+  clearSelection()
+}
+
+async function copyBatchUpns() {
+  if (selectedUserObjects.value.length < 2) return
+  const upns = [...new Set(selectedUserObjects.value.map((u) => u.userPrincipalName).filter(Boolean))]
+  await copyUpnsToClipboard(upns, authStore.showToast.bind(authStore))
 }
 
 async function runBatchSetOffice() {

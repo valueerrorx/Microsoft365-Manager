@@ -119,10 +119,10 @@
                 <input
                   type="checkbox"
                   class="form-check-input"
-                  :checked="allPageGroupsSelected"
-                  :indeterminate.prop="pageGroupsSelectionIndeterminate"
-                  title="Alle auf dieser Seite"
-                  @change="toggleSelectGroupsPage"
+                  :checked="allFilteredGroupsSelected"
+                  :indeterminate.prop="filteredGroupsSelectionIndeterminate"
+                  title="Alle in der Liste auswählen"
+                  @change="toggleSelectAll"
                 />
               </th>
               <th @click="setSort('displayName')" style="cursor:pointer;user-select:none;">
@@ -702,15 +702,16 @@ watch([groupTypeFilter, visibilityFilter, teamsFilter], () => {
 
 const selectedGroupIds = ref([])
 
-const pageGroupIds = computed(() => paginatedGroups.value.map((g) => g.id).filter(Boolean))
+const allFilteredGroupsSelected = computed(() => {
+  const list = filteredGroups.value
+  return list.length > 0 && list.every((g) => g.id && selectedGroupIds.value.includes(g.id))
+})
 
-const allPageGroupsSelected = computed(
-  () => pageGroupIds.value.length > 0 && pageGroupIds.value.every((id) => selectedGroupIds.value.includes(id))
-)
-
-const pageGroupsSelectionIndeterminate = computed(() => {
-  const n = pageGroupIds.value.filter((id) => selectedGroupIds.value.includes(id)).length
-  return n > 0 && n < pageGroupIds.value.length
+const filteredGroupsSelectionIndeterminate = computed(() => {
+  const list = filteredGroups.value.filter((g) => g.id)
+  if (!list.length) return false
+  const n = list.filter((g) => selectedGroupIds.value.includes(g.id)).length
+  return n > 0 && n < list.length
 })
 
 function isGroupRowSelected(id) {
@@ -725,13 +726,12 @@ function toggleGroupRowSelected(id) {
   }
 }
 
-function toggleSelectGroupsPage(e) {
-  const checked = e.target.checked
-  const ids = pageGroupIds.value
-  if (checked) {
-    selectedGroupIds.value = [...new Set([...selectedGroupIds.value, ...ids])]
+// Toggle selection for all filtered groups (not just the current page).
+function toggleSelectAll() {
+  if (allFilteredGroupsSelected.value) {
+    clearGroupSelection()
   } else {
-    selectedGroupIds.value = selectedGroupIds.value.filter((id) => !ids.includes(id))
+    selectedGroupIds.value = filteredGroups.value.map((g) => g.id).filter(Boolean)
   }
 }
 
