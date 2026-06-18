@@ -64,24 +64,13 @@ function Get-SecurityManagementLabel {
     return ''
 }
 
-# Single UI label: Intune enrollment > active MDM > stale managementType without isManaged.
+# UI label aligned with Entra MDM column: Intune enrollment only, else "none" (ignore stale Graph flags).
 function Get-ManagementSummary {
-    param(
-        [string]$ManagementType,
-        [bool]$IsManaged,
-        [bool]$IsIntuneManaged
-    )
+    param([bool]$IsIntuneManaged)
     if ($IsIntuneManaged) {
         return @{ label = 'Microsoft Intune'; kind = 'intune' }
     }
-    $mgmtLabel = Get-ManagementLabel -ManagementType $ManagementType
-    if ($IsManaged -eq $true -and $mgmtLabel) {
-        return @{ label = $mgmtLabel; kind = 'managed' }
-    }
-    if ($mgmtLabel) {
-        return @{ label = "$mgmtLabel (unmanaged)"; kind = 'unmanaged' }
-    }
-    return @{ label = ''; kind = 'none' }
+    return @{ label = 'none'; kind = 'none' }
 }
 
 function Format-Iso {
@@ -180,7 +169,7 @@ try {
                 $dev.isCompliant = $false
             }
         }
-        $summary = Get-ManagementSummary -ManagementType $dev.managementType -IsManaged ($dev.isManaged -eq $true) -IsIntuneManaged ($dev.isIntuneManaged -eq $true)
+        $summary = Get-ManagementSummary -IsIntuneManaged ($dev.isIntuneManaged -eq $true)
         $dev.managementSummaryLabel = [string]$summary.label
         $dev.managementSummaryKind = [string]$summary.kind
         $devicesData += $dev

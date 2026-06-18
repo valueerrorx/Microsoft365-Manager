@@ -52,7 +52,7 @@
               v-model="filterManagement"
               v-model:invert="filterManagementInvert"
               :options="managementFilterOptions"
-              placeholder="Verwaltung: alle"
+              placeholder="MDM: alle"
             />
           </div>
           <div class="devices-filter-msf flex-shrink-0">
@@ -168,7 +168,7 @@
                 Lizenz <i class="bi" :class="sortIcon('ownerLicenses')"></i>
               </th>
               <th v-if="isColVisible('managementSummaryLabel')" @click="setSort('managementSummaryLabel')" style="cursor:pointer;user-select:none;min-width:9rem;">
-                Verwaltung <i class="bi" :class="sortIcon('managementSummaryLabel')"></i>
+                MDM <i class="bi" :class="sortIcon('managementSummaryLabel')"></i>
               </th>
               <th v-if="isColVisible('isCompliant')" @click="setSort('isCompliant')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Konform <i class="bi" :class="sortIcon('isCompliant')"></i>
@@ -219,8 +219,8 @@
                 <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
               </td>
               <td v-if="isColVisible('managementSummaryLabel')" :title="managementSummaryTitle(d)">
-                <span v-if="d.managementSummaryLabel" :class="managementSummaryBadgeClass(d)">{{ d.managementSummaryLabel }}</span>
-                <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
+                <span v-if="deviceManagementKind(d) === 'intune'" class="badge-mgmt-intune">{{ d.managementSummaryLabel }}</span>
+                <span v-else style="font-size:0.8rem;color:#484f58;">{{ d.managementSummaryLabel || 'none' }}</span>
               </td>
               <td v-if="isColVisible('isCompliant')">
                 <span v-if="d.isCompliant === true" class="badge-active">Ja</span>
@@ -682,7 +682,7 @@ const DEVICE_TABLE_COLUMNS = [
   { key: 'ownerDisplayName', label: 'Besitzer' },
   { key: 'ownerDepartment', label: 'Abteilung' },
   { key: 'ownerLicenses', label: 'Lizenz', defaultVisible: false },
-  { key: 'managementSummaryLabel', label: 'Verwaltung' },
+  { key: 'managementSummaryLabel', label: 'MDM' },
   { key: 'isCompliant', label: 'Konform' },
   { key: 'createdDateTime', label: 'Registriert', defaultVisible: false },
   { key: 'approximateLastSignInDateTime', label: 'Aktivität' }
@@ -760,12 +760,10 @@ const trustOptions = [
   { value: 'other', label: 'Sonstige / leer' }
 ]
 
-// Verwaltungs-Filter: gleiche Kategorien wie Spalte „Verwaltung“.
+// MDM filter: same buckets as Entra MDM column (Intune vs none).
 const managementFilterOptions = [
   { value: 'intune', label: 'Microsoft Intune' },
-  { value: 'managed', label: 'MDM aktiv' },
-  { value: 'unmanaged', label: 'Unmanaged' },
-  { value: 'none', label: 'Keine' }
+  { value: 'none', label: 'none' }
 ]
 
 // UPN (lowercase) -> User-Objekt (für Besitzer-Lizenz und -Name)
@@ -817,24 +815,10 @@ function ownerLicenseSortText(d) {
   return ownerLicenses(d).join(', ')
 }
 
-// Resolve management kind for filter/badge (fallback when summary fields missing).
+// Resolve MDM kind for filter/display (Intune enrollment only; else none like Entra portal).
 function deviceManagementKind(d) {
-  const kind = d?.managementSummaryKind
-  if (kind === 'stamp') return 'unmanaged'
-  if (kind) return kind
-  if (d?.isIntuneManaged) return 'intune'
-  if (d?.isManaged === true && (d?.managementLabel || d?.managementType)) return 'managed'
-  if (d?.managementLabel || d?.managementType) return 'unmanaged'
+  if (d?.managementSummaryKind === 'intune' || d?.isIntuneManaged) return 'intune'
   return 'none'
-}
-
-// Badge class for combined Entra/Intune management column.
-function managementSummaryBadgeClass(d) {
-  const kind = deviceManagementKind(d)
-  if (kind === 'intune') return 'badge-mgmt-intune'
-  if (kind === 'managed') return 'badge-mdm'
-  if (kind === 'unmanaged' || kind === 'stamp') return 'badge-mgmt-unmanaged'
-  return ''
 }
 
 // Tooltip with raw Graph fields behind the summary label.
