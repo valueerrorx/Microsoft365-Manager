@@ -459,6 +459,26 @@ html, body, #app {
   display: inline-block;
 }
 
+.badge-mgmt-intune {
+  background: rgba(31, 111, 235, 0.18);
+  color: #58a6ff;
+  border: 1px solid rgba(31, 111, 235, 0.35);
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.badge-mgmt-unmanaged {
+  background: rgba(139, 148, 158, 0.1);
+  color: #8b949e;
+  border: 1px solid rgba(139, 148, 158, 0.22);
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
 /* ---- Form Controls ---- */
 .form-control,
 .form-select {

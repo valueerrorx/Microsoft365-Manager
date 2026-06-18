@@ -49,6 +49,14 @@
           </select>
           <div class="devices-filter-msf flex-shrink-0">
             <MultiSelectFilter
+              v-model="filterManagement"
+              v-model:invert="filterManagementInvert"
+              :options="managementFilterOptions"
+              placeholder="Verwaltung: alle"
+            />
+          </div>
+          <div class="devices-filter-msf flex-shrink-0">
+            <MultiSelectFilter
               v-model="filterLicenseSkus"
               v-model:invert="filterLicenseInvert"
               :options="licenseFilterOptions"
@@ -159,11 +167,8 @@
               <th v-if="isColVisible('ownerLicenses')" @click="setSort('ownerLicenses')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Lizenz <i class="bi" :class="sortIcon('ownerLicenses')"></i>
               </th>
-              <th v-if="isColVisible('managementLabel')" @click="setSort('managementLabel')" style="cursor:pointer;user-select:none;">
-                MDM <i class="bi" :class="sortIcon('managementLabel')"></i>
-              </th>
-              <th v-if="isColVisible('securityManagementLabel')" @click="setSort('securityManagementLabel')" style="cursor:pointer;user-select:none;min-width:8rem;">
-                Sicherheit <i class="bi" :class="sortIcon('securityManagementLabel')"></i>
+              <th v-if="isColVisible('managementSummaryLabel')" @click="setSort('managementSummaryLabel')" style="cursor:pointer;user-select:none;min-width:9rem;">
+                Verwaltung <i class="bi" :class="sortIcon('managementSummaryLabel')"></i>
               </th>
               <th v-if="isColVisible('isCompliant')" @click="setSort('isCompliant')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Konform <i class="bi" :class="sortIcon('isCompliant')"></i>
@@ -213,11 +218,10 @@
                 </div>
                 <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
               </td>
-              <td v-if="isColVisible('managementLabel')">
-                <span v-if="d.managementLabel" class="badge-mdm">{{ d.managementLabel }}</span>
+              <td v-if="isColVisible('managementSummaryLabel')" :title="managementSummaryTitle(d)">
+                <span v-if="d.managementSummaryLabel" :class="managementSummaryBadgeClass(d)">{{ d.managementSummaryLabel }}</span>
                 <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
               </td>
-              <td v-if="isColVisible('securityManagementLabel')" style="font-size:0.8rem;">{{ d.securityManagementLabel || '—' }}</td>
               <td v-if="isColVisible('isCompliant')">
                 <span v-if="d.isCompliant === true" class="badge-active">Ja</span>
                 <span v-else-if="d.isCompliant === false" class="badge-inactive">Nein</span>
@@ -678,8 +682,7 @@ const DEVICE_TABLE_COLUMNS = [
   { key: 'ownerDisplayName', label: 'Besitzer' },
   { key: 'ownerDepartment', label: 'Abteilung' },
   { key: 'ownerLicenses', label: 'Lizenz', defaultVisible: false },
-  { key: 'managementLabel', label: 'MDM' },
-  { key: 'securityManagementLabel', label: 'Sicherheit' },
+  { key: 'managementSummaryLabel', label: 'Verwaltung' },
   { key: 'isCompliant', label: 'Konform' },
   { key: 'createdDateTime', label: 'Registriert', defaultVisible: false },
   { key: 'approximateLastSignInDateTime', label: 'Aktivität' }
@@ -742,6 +745,8 @@ const filterTrusts = ref([])
 const filterTrustsInvert = ref(false)
 const filterEnabled = ref('all')
 const filterCompliant = ref('all')
+const filterManagement = ref([])
+const filterManagementInvert = ref(false)
 const filterLicenseSkus = ref([]) // skuIds des Gerätebesitzers + 'none' (kein/unlizenzierter Besitzer)
 const filterLicenseInvert = ref(false)
 const filterDepts = ref([])
@@ -753,6 +758,14 @@ const trustOptions = [
   { value: 'Workplace', label: 'Entra registriert' },
   { value: 'ServerAd', label: 'Hybrid' },
   { value: 'other', label: 'Sonstige / leer' }
+]
+
+// Verwaltungs-Filter: gleiche Kategorien wie Spalte „Verwaltung“.
+const managementFilterOptions = [
+  { value: 'intune', label: 'Microsoft Intune' },
+  { value: 'managed', label: 'MDM aktiv' },
+  { value: 'unmanaged', label: 'Unmanaged' },
+  { value: 'none', label: 'Keine' }
 ]
 
 // UPN (lowercase) -> User-Objekt (für Besitzer-Lizenz und -Name)
@@ -802,6 +815,36 @@ function ownerLicenses(d) {
 
 function ownerLicenseSortText(d) {
   return ownerLicenses(d).join(', ')
+}
+
+// Resolve management kind for filter/badge (fallback when summary fields missing).
+function deviceManagementKind(d) {
+  const kind = d?.managementSummaryKind
+  if (kind === 'stamp') return 'unmanaged'
+  if (kind) return kind
+  if (d?.isIntuneManaged) return 'intune'
+  if (d?.isManaged === true && (d?.managementLabel || d?.managementType)) return 'managed'
+  if (d?.managementLabel || d?.managementType) return 'unmanaged'
+  return 'none'
+}
+
+// Badge class for combined Entra/Intune management column.
+function managementSummaryBadgeClass(d) {
+  const kind = deviceManagementKind(d)
+  if (kind === 'intune') return 'badge-mgmt-intune'
+  if (kind === 'managed') return 'badge-mdm'
+  if (kind === 'unmanaged' || kind === 'stamp') return 'badge-mgmt-unmanaged'
+  return ''
+}
+
+// Tooltip with raw Graph fields behind the summary label.
+function managementSummaryTitle(d) {
+  const parts = []
+  if (d?.managementType) parts.push(`managementType: ${d.managementType}`)
+  if (d?.isManaged === true) parts.push('isManaged: ja')
+  else if (d?.isManaged === false) parts.push('isManaged: nein')
+  if (d?.isIntuneManaged) parts.push('Intune: eingeschrieben')
+  return parts.join(' · ')
 }
 
 // Lizenz-Filteroptionen: nur SKUs die bei mind. einem Gerätebesitzer vorkommen
@@ -856,6 +899,7 @@ const filteredDevices = computed(() => {
         (d.operatingSystem || '').toLowerCase().includes(q) ||
         (d.operatingSystemVersion || '').toLowerCase().includes(q) ||
         (d.trustTypeLabel || '').toLowerCase().includes(q) ||
+        (d.managementSummaryLabel || '').toLowerCase().includes(q) ||
         (d.managementLabel || '').toLowerCase().includes(q) ||
         ownerDepartment(d).toLowerCase().includes(q) ||
         ownerLicenseSortText(d).toLowerCase().includes(q)
@@ -878,6 +922,14 @@ const filteredDevices = computed(() => {
   if (fc === 'yes') list = list.filter((d) => d.isCompliant === true)
   if (fc === 'no') list = list.filter((d) => d.isCompliant === false)
   if (fc === 'unknown') list = list.filter((d) => d.isCompliant !== true && d.isCompliant !== false)
+  if (filterManagement.value.includes(MSF_NONE)) { if (!filterManagementInvert.value) list = [] }
+  else if (filterManagement.value.length) {
+    const want = new Set(filterManagement.value)
+    list = list.filter((d) => {
+      const match = want.has(deviceManagementKind(d))
+      return filterManagementInvert.value ? !match : match
+    })
+  }
   if (filterLicenseSkus.value.includes(MSF_NONE)) { if (!filterLicenseInvert.value) list = [] }
   else if (filterLicenseSkus.value.length) {
     const want = new Set(filterLicenseSkus.value)
@@ -1016,7 +1068,7 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 
-watch([filterTrusts, filterTrustsInvert, filterEnabled, filterCompliant, filterLicenseSkus, filterLicenseInvert, filterDepts, filterDeptsInvert], () => {
+watch([filterTrusts, filterTrustsInvert, filterEnabled, filterCompliant, filterManagement, filterManagementInvert, filterLicenseSkus, filterLicenseInvert, filterDepts, filterDeptsInvert], () => {
   currentPage.value = 1
 })
 

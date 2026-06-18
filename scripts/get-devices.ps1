@@ -64,6 +64,26 @@ function Get-SecurityManagementLabel {
     return ''
 }
 
+# Single UI label: Intune enrollment > active MDM > stale managementType without isManaged.
+function Get-ManagementSummary {
+    param(
+        [string]$ManagementType,
+        [bool]$IsManaged,
+        [bool]$IsIntuneManaged
+    )
+    if ($IsIntuneManaged) {
+        return @{ label = 'Microsoft Intune'; kind = 'intune' }
+    }
+    $mgmtLabel = Get-ManagementLabel -ManagementType $ManagementType
+    if ($IsManaged -eq $true -and $mgmtLabel) {
+        return @{ label = $mgmtLabel; kind = 'managed' }
+    }
+    if ($mgmtLabel) {
+        return @{ label = "$mgmtLabel (unmanaged)"; kind = 'unmanaged' }
+    }
+    return @{ label = ''; kind = 'none' }
+}
+
 function Format-Iso {
     param($Val)
     if ($null -eq $Val) { return $null }
@@ -160,6 +180,9 @@ try {
                 $dev.isCompliant = $false
             }
         }
+        $summary = Get-ManagementSummary -ManagementType $dev.managementType -IsManaged ($dev.isManaged -eq $true) -IsIntuneManaged ($dev.isIntuneManaged -eq $true)
+        $dev.managementSummaryLabel = [string]$summary.label
+        $dev.managementSummaryKind = [string]$summary.kind
         $devicesData += $dev
     }
     $intuneCount = ($devicesData | Where-Object { $_.isIntuneManaged -eq $true }).Count
