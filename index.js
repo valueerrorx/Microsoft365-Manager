@@ -958,7 +958,7 @@ function parseCsvText(text) {
     const nni = getIdx(['nachnamenormalized'])
     const ai = getIdx(['abteilung', 'department'])
     const oi = getIdx(['büro', 'buero', 'office', 'officelocation'])
-    const ii = getIdx(['id'], { exactOnly: true })
+    const ii = getIdx(['id', 'schülerkennzahl', 'schuelerkennzahl', 'bpkbf', 'bpk:bf'], { exactOnly: true })
     const ti = getIdx(['usertype', 'type'])
     const pi = getIdx(['newpassword', 'password', 'passwort'])
     const fi = getIdx(['forcechange', 'force'])

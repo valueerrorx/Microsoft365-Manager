@@ -27,13 +27,14 @@
                         <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.5rem;">
                             <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i> CSV-Format
                         </div>
-                        <pre style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Familienname;ID
+                        <pre style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Familienname;Schülerkennzahl
 Max;Mustermann;101
 Anna;Schmidt;202</pre>
                         <div style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
                             Pflicht: <strong>Vorname</strong> + <strong>Familienname</strong> (oder <strong>Nachname</strong>) für den Abgleich.
-                            Optional: Spalte <strong>ID</strong> — Wert wird pro Zeile als <strong>Funktion</strong> (Jobtitel) gesetzt
-                            (<em>Funktion aus ID setzen</em>).
+                            Optional: Spalte <strong>Schülerkennzahl</strong>, <strong>BPKBF</strong>, <strong>bPK:BF</strong> oder <strong>ID</strong>
+                            — Wert wird als <strong>Funktion</strong> gesetzt (= Microsoft-Feld <em>Position</em> / <em>Jobtitel</em>;
+                            <em>Funktion aus ID setzen</em>).
                             Weitere Zusatzspalten werden ignoriert.
                             Der UPN wird daraus exakt wie beim Erstellen gebildet
                             (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
@@ -109,7 +110,7 @@ Anna;Schmidt;202</pre>
                             <button
                                 class="btn btn-outline-secondary btn-sm"
                                 :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning || !hasIdColumn"
-                                :title="hasIdColumn ? '' : 'CSV braucht eine ID-Spalte'"
+                                :title="hasIdColumn ? '' : 'CSV braucht Spalte Schülerkennzahl, BPKBF, bPK:BF oder ID'"
                                 @click="runSetJobTitleFromId"
                             >
                                 <i class="bi bi-briefcase me-1"></i> Funktion aus ID setzen

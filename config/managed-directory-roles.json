@@ -25,6 +25,11 @@
     "dangerous": true
   },
   {
+    "templateId": "c4e39bd9-1100-46d3-8c65-fb160da0071f",
+    "label": "Authentifizierungsadministrator",
+    "dangerous": true
+  },
+  {
     "templateId": "3f04f91a-4ad7-4bd3-bcfa-49882ea1a88a",
     "label": "Content-Administrator",
     "dangerous": true
