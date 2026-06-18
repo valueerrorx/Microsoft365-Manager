@@ -73,6 +73,15 @@
               searchable
             />
           </div>
+          <div class="devices-filter-msf devices-filter-msf-wide flex-shrink-0">
+            <MultiSelectFilter
+              v-model="filterGroups"
+              v-model:invert="filterGroupsInvert"
+              :options="groupFilterOptions"
+              placeholder="Gruppe: alle"
+              searchable
+            />
+          </div>
           <button
             type="button"
             class="btn btn-outline-secondary btn-sm flex-shrink-0"
@@ -81,7 +90,9 @@
           >
             <i class="bi bi-list-ul"></i>
           </button>
-          <span class="devices-filter-count flex-shrink-0">{{ filteredDevices.length }} Treffer</span>
+          <span class="devices-filter-count flex-shrink-0">
+            {{ filteredDevices.length }} Treffer<span v-if="groupFilterLoading" style="color:#8b949e;"> · Gruppe…</span>
+          </span>
         </div>
       </div>
     </div>
@@ -167,6 +178,9 @@
               <th v-if="isColVisible('ownerLicenses')" @click="setSort('ownerLicenses')" style="cursor:pointer;user-select:none;white-space:nowrap;">
                 Lizenz <i class="bi" :class="sortIcon('ownerLicenses')"></i>
               </th>
+              <th v-if="isColVisible('deviceGroups')" @click="setSort('deviceGroups')" style="cursor:pointer;user-select:none;min-width:9rem;">
+                Gruppe <i class="bi" :class="sortIcon('deviceGroups')"></i>
+              </th>
               <th v-if="isColVisible('managementSummaryLabel')" @click="setSort('managementSummaryLabel')" style="cursor:pointer;user-select:none;min-width:9rem;">
                 MDM <i class="bi" :class="sortIcon('managementSummaryLabel')"></i>
               </th>
@@ -215,6 +229,14 @@
                 <div v-if="ownerLicenses(d).length" class="d-flex flex-wrap gap-1">
                   <span v-for="label in ownerLicenses(d).slice(0, 2)" :key="label" class="badge-license" style="font-size:0.72rem;">{{ label }}</span>
                   <span v-if="ownerLicenses(d).length > 2" class="badge-license" style="font-size:0.72rem;">+{{ ownerLicenses(d).length - 2 }}</span>
+                </div>
+                <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
+              </td>
+              <td v-if="isColVisible('deviceGroups')" :title="deviceGroupSortText(d)">
+                <div v-if="deviceGroupsColumnLoading" class="spinner-border spinner-border-sm" style="color:#58a6ff;width:0.85rem;height:0.85rem;" role="status"></div>
+                <div v-else-if="deviceGroupLabels(d).length" class="d-flex flex-wrap gap-1">
+                  <span v-for="label in deviceGroupLabels(d).slice(0, 2)" :key="label" class="badge-license" style="font-size:0.72rem;">{{ label }}</span>
+                  <span v-if="deviceGroupLabels(d).length > 2" class="badge-license" style="font-size:0.72rem;">+{{ deviceGroupLabels(d).length - 2 }}</span>
                 </div>
                 <span v-else style="font-size:0.8rem;color:#484f58;">—</span>
               </td>
@@ -592,7 +614,8 @@
           <div class="modal-body">
             <p class="small mb-2" style="color:#8b949e;">
               <strong style="color:#e6edf3;">{{ groupPickerModal.deviceCount }}</strong> Geräte werden der gewählten Gruppe zugeordnet.
-              Bereits vorhandene Mitglieder werden übersprungen. Dynamische Gruppen sind nicht wählbar.
+              Nur <strong>Sicherheitsgruppen</strong> (keine Microsoft-365-Gruppen, keine dynamischen Gruppen).
+              Bereits vorhandene Mitglieder werden übersprungen.
             </p>
             <div class="input-group input-group-sm mb-2">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -609,7 +632,7 @@
               Gruppen werden geladen...
             </div>
             <div v-else-if="!filteredDirectoryGroups.length" class="py-3 text-center small" style="color:#8b949e;">
-              Keine Gruppen passend zum Filter.
+              Keine passende Sicherheitsgruppe. Microsoft-365-Gruppen unterstützen keine Geräte-Mitglieder.
             </div>
             <div v-else class="group-picker-list">
               <label
@@ -641,7 +664,7 @@
             <button
               type="button"
               class="btn btn-primary btn-sm"
-              :disabled="groupPickerModal.running || !groupPickerModal.selectedGroupId || groupsStore.loading"
+              :disabled="groupPickerModal.running || !canAddDevicesToSelectedGroup || groupsStore.loading"
               @click="runAddDevicesToGroup"
             >
               {{ groupPickerModal.running ? 'Wird ausgeführt...' : 'Hinzufügen' }}
@@ -669,8 +692,103 @@ const usersStore = useUsersStore()
 const groupsStore = useGroupsStore()
 const authStore = useAuthStore()
 
-// Statische (nicht-dynamische) Gruppen aus dem geteilten groupsStore — dynamische erlauben kein manuelles Hinzufügen
-const assignableGroups = computed(() => groupsStore.groups.filter((g) => !g.isDynamic))
+// Security groups only — M365 (Unified) and dynamic groups reject device members in Graph.
+function groupAcceptsDeviceMembers(g) {
+  if (!g || g.isDynamic) return false
+  const types = g.groupTypes || []
+  if (types.includes('Unified')) return false
+  return g.securityEnabled === true
+}
+
+const assignableGroups = computed(() => groupsStore.groups.filter(groupAcceptsDeviceMembers))
+
+// Security groups only — devices can only be members of these (not M365 Unified).
+const groupFilterOptions = computed(() =>
+  assignableGroups.value
+    .map((g) => ({ value: g.id, label: g.displayName || g.mailNickname || g.id }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'de'))
+)
+
+// Fetch device member IDs for one security group (shared cache for filter + column).
+async function fetchGroupDeviceMemberIds(gid, deviceIdSet) {
+  let ids = groupMembersCache.get(gid)
+  if (ids) return ids
+  const res = await groupsStore.fetchGroupMembers(gid)
+  if (res.status !== 'ok') {
+    authStore.showToast(res.message || 'Gruppenmitglieder laden fehlgeschlagen', 'error')
+    ids = new Set()
+  } else {
+    ids = new Set(
+      (res.members || [])
+        .map((m) => m.id)
+        .filter((id) => id && deviceIdSet.has(id))
+    )
+    groupMembersCache.set(gid, ids)
+  }
+  return ids
+}
+
+// Load device directory-object IDs for selected security groups (cached per group).
+async function refreshGroupFilterIds() {
+  const selected = filterGroups.value.filter((g) => g !== MSF_NONE)
+  if (!selected.length) {
+    filterGroupDeviceIds.value = null
+    groupFilterLoading.value = false
+    return
+  }
+  groupFilterLoading.value = true
+  filterGroupDeviceIds.value = new Set()
+  const deviceIdSet = new Set(devicesStore.devices.map((d) => d.id).filter(Boolean))
+  const union = new Set()
+  try {
+    for (const gid of selected) {
+      const ids = await fetchGroupDeviceMemberIds(gid, deviceIdSet)
+      for (const id of ids) union.add(id)
+    }
+    filterGroupDeviceIds.value = union
+  } finally {
+    groupFilterLoading.value = false
+  }
+}
+
+const deviceGroupLabelsById = ref({})
+const deviceGroupsColumnLoading = ref(false)
+
+// Build device -> security group names map when the Gruppe column is visible.
+async function loadDeviceGroupColumnData() {
+  if (!isColVisible('deviceGroups')) return
+  deviceGroupsColumnLoading.value = true
+  try {
+    if (!assignableGroups.value.length && !groupsStore.loading) {
+      await groupsStore.fetchGroupsDetail()
+    }
+    const deviceIdSet = new Set(devicesStore.devices.map((d) => d.id).filter(Boolean))
+    const byDevice = {}
+    for (const g of assignableGroups.value) {
+      const ids = await fetchGroupDeviceMemberIds(g.id, deviceIdSet)
+      const label = g.displayName || g.mailNickname || g.id
+      for (const id of ids) {
+        if (!byDevice[id]) byDevice[id] = new Set()
+        byDevice[id].add(label)
+      }
+    }
+    const out = {}
+    for (const [id, labels] of Object.entries(byDevice)) {
+      out[id] = [...labels].sort((a, b) => a.localeCompare(b, 'de'))
+    }
+    deviceGroupLabelsById.value = out
+  } finally {
+    deviceGroupsColumnLoading.value = false
+  }
+}
+
+function deviceGroupLabels(d) {
+  return deviceGroupLabelsById.value[d?.id] || []
+}
+
+function deviceGroupSortText(d) {
+  return deviceGroupLabels(d).join(', ')
+}
 
 // Toggleable table columns (checkbox + Aktionen always visible).
 const DEVICE_TABLE_COLUMNS = [
@@ -682,6 +800,7 @@ const DEVICE_TABLE_COLUMNS = [
   { key: 'ownerDisplayName', label: 'Besitzer' },
   { key: 'ownerDepartment', label: 'Abteilung' },
   { key: 'ownerLicenses', label: 'Lizenz', defaultVisible: false },
+  { key: 'deviceGroups', label: 'Gruppe', defaultVisible: false },
   { key: 'managementSummaryLabel', label: 'MDM' },
   { key: 'isCompliant', label: 'Konform' },
   { key: 'createdDateTime', label: 'Registriert', defaultVisible: false },
@@ -751,6 +870,11 @@ const filterLicenseSkus = ref([]) // skuIds des Gerätebesitzers + 'none' (kein/
 const filterLicenseInvert = ref(false)
 const filterDepts = ref([])
 const filterDeptsInvert = ref(false)
+const filterGroups = ref([])
+const filterGroupsInvert = ref(false)
+const filterGroupDeviceIds = ref(null)
+const groupFilterLoading = ref(false)
+const groupMembersCache = new Map()
 
 // Feste Verknüpfungstyp-Optionen ('other' = sonstige/leer).
 const trustOptions = [
@@ -886,6 +1010,7 @@ const filteredDevices = computed(() => {
         (d.managementSummaryLabel || '').toLowerCase().includes(q) ||
         (d.managementLabel || '').toLowerCase().includes(q) ||
         ownerDepartment(d).toLowerCase().includes(q) ||
+        deviceGroupSortText(d).toLowerCase().includes(q) ||
         ownerLicenseSortText(d).toLowerCase().includes(q)
     )
   }
@@ -939,6 +1064,18 @@ const filteredDevices = computed(() => {
       return filterDeptsInvert.value ? !match : match
     })
   }
+  if (filterGroups.value.includes(MSF_NONE)) { if (!filterGroupsInvert.value) list = [] }
+  else if (filterGroups.value.length) {
+    const ids = filterGroupDeviceIds.value
+    if (ids) {
+      list = list.filter((d) => {
+        const match = ids.has(d.id)
+        return filterGroupsInvert.value ? !match : match
+      })
+    } else {
+      list = []
+    }
+  }
 
   return [...list].sort((a, b) => {
     const key = sortKey.value
@@ -954,14 +1091,16 @@ const filteredDevices = computed(() => {
     }
     const av = (
       key === 'ownerDisplayName' ? ownerName(a)
-      : key === 'ownerDepartment' ? ownerDepartment(a)
+      :       key === 'ownerDepartment' ? ownerDepartment(a)
       : key === 'ownerLicenses' ? ownerLicenseSortText(a)
+      : key === 'deviceGroups' ? deviceGroupSortText(a)
       : (a[key] || '')
     ).toLowerCase()
     const bv = (
       key === 'ownerDisplayName' ? ownerName(b)
-      : key === 'ownerDepartment' ? ownerDepartment(b)
+      :       key === 'ownerDepartment' ? ownerDepartment(b)
       : key === 'ownerLicenses' ? ownerLicenseSortText(b)
+      : key === 'deviceGroups' ? deviceGroupSortText(b)
       : (b[key] || '')
     ).toLowerCase()
     return av < bv ? -sortDir.value : av > bv ? sortDir.value : 0
@@ -1052,9 +1191,17 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 
-watch([filterTrusts, filterTrustsInvert, filterEnabled, filterCompliant, filterManagement, filterManagementInvert, filterLicenseSkus, filterLicenseInvert, filterDepts, filterDeptsInvert], () => {
+watch([filterTrusts, filterTrustsInvert, filterEnabled, filterCompliant, filterManagement, filterManagementInvert, filterLicenseSkus, filterLicenseInvert, filterDepts, filterDeptsInvert, filterGroups, filterGroupsInvert], () => {
   currentPage.value = 1
 })
+
+watch([filterGroups, filterGroupsInvert], () => {
+  refreshGroupFilterIds()
+})
+
+watch(visibleColumnKeys, (keys) => {
+  if (keys.includes('deviceGroups')) loadDeviceGroupColumnData()
+}, { deep: true })
 
 function setSort(key) {
   if (sortKey.value === key) sortDir.value *= -1
@@ -1246,12 +1393,15 @@ const filteredDirectoryGroups = computed(() => {
   )
 })
 
-const selectedGroupDisplayName = computed(() => {
+const selectedDeviceGroup = computed(() => {
   const id = groupPickerModal.selectedGroupId
-  if (!id) return ''
-  const g = assignableGroups.value.find((x) => x.id === id)
-  return g?.displayName || id
+  if (!id) return null
+  return assignableGroups.value.find((x) => x.id === id) || null
 })
+
+const selectedGroupDisplayName = computed(() => selectedDeviceGroup.value?.displayName || groupPickerModal.selectedGroupId || '')
+
+const canAddDevicesToSelectedGroup = computed(() => !!selectedDeviceGroup.value)
 
 function groupKindLabel(g) {
   const types = g.groupTypes || []
@@ -1281,17 +1431,26 @@ function closeGroupPickerModal() {
 }
 
 async function runAddDevicesToGroup() {
-  if (!groupPickerModal.selectedGroupId) return
+  if (!canAddDevicesToSelectedGroup.value) {
+    authStore.showToast('Nur Sicherheitsgruppen erlauben Geräte als Mitglieder.', 'error')
+    return
+  }
   // selectedDeviceIds enthält bereits die Entra-Geräte-Objekt-IDs (d.id)
-  const ids = selectedDeviceIds.value.filter(Boolean)
+  const ids = [...selectedDeviceIds.value].filter(Boolean).map((id) => String(id))
   if (!ids.length) return
   groupPickerModal.running = true
+  const g = selectedDeviceGroup.value
   const { ok } = await devicesStore.addDevicesToGroup({
-    groupId: groupPickerModal.selectedGroupId,
-    deviceIds: ids
+    groupId: g.id,
+    deviceIds: ids,
+    groupTypes: [...(g.groupTypes || [])],
+    securityEnabled: g.securityEnabled === true
   })
   groupPickerModal.running = false
   if (ok) {
+    groupMembersCache.delete(g.id)
+    if (isColVisible('deviceGroups')) loadDeviceGroupColumnData()
+    if (filterGroups.value.includes(g.id)) refreshGroupFilterIds()
     groupPickerModal.show = false
     clearDeviceSelection()
   }
@@ -1300,6 +1459,7 @@ async function runAddDevicesToGroup() {
 onMounted(() => {
   if (!devicesStore.devices.length && !devicesStore.loading) devicesStore.fetchDevices()
   if (!usersStore.users.length && !usersStore.loading) usersStore.fetchUsers()
+  if (!groupsStore.groups.length && !groupsStore.loading) groupsStore.fetchGroupsDetail()
 })
 </script>
 
@@ -1339,6 +1499,12 @@ onMounted(() => {
 }
 .devices-filter-msf {
   width: 8.5rem;
+}
+.devices-filter-msf-wide {
+  width: 10rem;
+}
+.devices-filter-msf-wide :deep(.msf-toggle) {
+  max-width: 10rem;
 }
 .devices-filter-bar :deep(.msf) {
   width: 100%;

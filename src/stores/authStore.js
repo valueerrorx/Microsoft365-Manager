@@ -22,7 +22,10 @@ export const useAuthStore = defineStore('auth', {
         ...log,
         timestamp: new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       })
-      if (this.logs.length > 300) this.logs.splice(0, 100)
+      // Keep a generous window for batch PS output; trim in chunks to avoid scroll jank.
+      const LOG_MAX = 3000
+      const LOG_TRIM = 500
+      if (this.logs.length > LOG_MAX) this.logs.splice(0, LOG_TRIM)
     },
 
     clearLogs() {

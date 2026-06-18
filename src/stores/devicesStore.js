@@ -264,7 +264,7 @@ export const useDevicesStore = defineStore('devices', {
     },
 
     // Adds device directory-object IDs to a group via the shared add-group-members handler.
-    async addDevicesToGroup({ groupId, deviceIds }) {
+    async addDevicesToGroup({ groupId, deviceIds, groupTypes, securityEnabled }) {
       const auth = useAuthStore()
       const ids = (deviceIds || []).filter(Boolean)
       if (!groupId || !ids.length) {
@@ -273,7 +273,13 @@ export const useDevicesStore = defineStore('devices', {
       }
       auth.addLog({ type: 'info', message: `Füge ${ids.length} Geräte zur Gruppe hinzu...` })
       try {
-        const result = await window.ipcRenderer.invoke('add-group-members', { groupId, userIds: ids })
+        const result = await window.ipcRenderer.invoke('add-group-members', {
+          groupId: String(groupId),
+          memberIdsJson: JSON.stringify(ids.map((id) => String(id))),
+          deviceMembers: true,
+          groupTypes: Array.isArray(groupTypes) ? groupTypes.map((t) => String(t)) : [],
+          securityEnabled: securityEnabled === true
+        })
         if (result.status === 'error') {
           auth.addLog({ type: 'error', message: result.message || 'Gruppenzuweisung fehlgeschlagen' })
           auth.showToast(result.message || 'Gruppenzuweisung fehlgeschlagen', 'error')

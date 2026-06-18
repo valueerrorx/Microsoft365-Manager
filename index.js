@@ -730,7 +730,9 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
     ...(accessToken ? { MS365_GRAPH_ACCESS_TOKEN: accessToken } : {})
   }
 
-  const PS_TIMEOUT_MS = 5 * 60 * 1000
+  const PS_TIMEOUT_MS = scriptRelPath === 'scripts/add-group-members.ps1'
+    ? 15 * 60 * 1000
+    : 5 * 60 * 1000
   const psCwd = path.dirname(tmpScript)
   const stdio = process.platform === 'win32'
     ? ['pipe', 'pipe', 'pipe']
@@ -1823,16 +1825,40 @@ ipcMain.handle('get-directory-groups', async () => {
   }
 })
 
-ipcMain.handle('add-group-members', async (_event, { groupId, userIds = [] }) => {
+ipcMain.handle('add-group-members', async (_event, { groupId, userIds = [], memberIdsJson = '', deviceMembers = false, groupTypes = [], securityEnabled = null }) => {
   try {
     const gid = String(groupId || '').trim()
-    const ids = Array.isArray(userIds) ? userIds.filter(Boolean).join(',') : ''
-    if (!gid || !ids) {
+    let idList = []
+    if (memberIdsJson) {
+      try {
+        const parsed = JSON.parse(String(memberIdsJson))
+        idList = Array.isArray(parsed) ? parsed.map((id) => String(id || '').trim()).filter(Boolean) : []
+      } catch {
+        return { status: 'error', message: 'Geräte-IDs konnten nicht gelesen werden', added: 0, skipped: 0, failed: 0, errors: [] }
+      }
+    } else {
+      idList = Array.isArray(userIds) ? userIds.map((id) => String(id || '').trim()).filter(Boolean) : []
+    }
+    if (!gid || !idList.length) {
       return { status: 'error', message: 'groupId und userIds erforderlich', added: 0, skipped: 0, failed: 0, errors: [] }
     }
-    const result = await runPsScript('scripts/add-group-members.ps1', ['-GroupId', gid, '-UserIds', ids], (log) => {
-      uiSend('ps-operation-log', log)
-    })
+    const tmpPath = path.join(os.tmpdir(), `group-members-${Date.now()}.json`)
+    await fs.writeFile(tmpPath, JSON.stringify(idList), 'utf8')
+    const psArgs = ['-GroupId', gid, '-MemberIdsPath', tmpPath]
+    if (deviceMembers) {
+      psArgs.push('-DeviceMembers')
+      const types = Array.isArray(groupTypes) ? groupTypes.filter(Boolean) : []
+      psArgs.push('-GroupTypes', types.join(','))
+      psArgs.push('-SecurityEnabled', securityEnabled === true ? 'true' : 'false')
+    }
+    let result
+    try {
+      result = await runPsScript('scripts/add-group-members.ps1', psArgs, (log) => {
+        uiSend('ps-operation-log', log)
+      })
+    } finally {
+      await fs.unlink(tmpPath).catch(() => {})
+    }
     if (result.exitCode === -1 && !result.stdout) {
       return { status: 'error', message: result.stderr || 'PowerShell konnte nicht gestartet werden', added: 0, skipped: 0, failed: 0, errors: [] }
     }
