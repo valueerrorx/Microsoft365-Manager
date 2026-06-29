@@ -55,8 +55,21 @@ try {
 Write-Host "Aktualisiere Benutzer: $UPN"
 
 try {
+    $existingUser = Get-MgUser -UserId $UPN -Property "onPremisesSyncEnabled" -ErrorAction Stop
+    $onPremMastered = ($existingUser.OnPremisesSyncEnabled -eq $true)
+
     # Nur übergebene Parameter werden aktualisiert
     $updateParams = @{ UserId = $UPN }
+
+    if ($onPremMastered) {
+        $blocked = @()
+        if (-not [string]::IsNullOrWhiteSpace($DisplayName)) { $blocked += "Anzeigename" }
+        if (-not [string]::IsNullOrWhiteSpace($GivenName))   { $blocked += "Vorname" }
+        if (-not [string]::IsNullOrWhiteSpace($Surname))     { $blocked += "Nachname" }
+        if ($blocked.Count -gt 0) {
+            throw "Benutzer wird aus dem lokalen Active Directory synchronisiert. Diese Felder können nur im lokalen AD geändert werden: $($blocked -join ', ')."
+        }
+    }
 
     if (-not [string]::IsNullOrWhiteSpace($DisplayName)) { $updateParams.DisplayName = $DisplayName }
     if (-not [string]::IsNullOrWhiteSpace($GivenName))   { $updateParams.GivenName = $GivenName }

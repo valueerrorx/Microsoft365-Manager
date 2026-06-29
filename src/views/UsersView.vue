@@ -279,18 +279,25 @@
             <button type="button" class="btn-close" @click="editModal.show = false"></button>
           </div>
           <div class="modal-body">
+            <div
+              v-if="editOnPremMastered"
+              class="alert mb-3"
+              style="background:rgba(210,153,34,0.1);border:1px solid rgba(210,153,34,0.35);color:#d29922;border-radius:6px;font-size:0.85rem;"
+            >
+              <i class="bi bi-hdd-network me-2"></i>{{ onPremSyncEditHint() }}
+            </div>
             <div class="row g-3">
               <div class="col-6">
                 <label class="form-label">Vorname</label>
-                <input v-model="editForm.givenName" type="text" class="form-control" />
+                <input v-model="editForm.givenName" type="text" class="form-control" :disabled="editOnPremMastered" />
               </div>
               <div class="col-6">
                 <label class="form-label">Nachname</label>
-                <input v-model="editForm.surname" type="text" class="form-control" />
+                <input v-model="editForm.surname" type="text" class="form-control" :disabled="editOnPremMastered" />
               </div>
               <div class="col-12">
                 <label class="form-label">Anzeigename</label>
-                <input v-model="editForm.displayName" type="text" class="form-control" />
+                <input v-model="editForm.displayName" type="text" class="form-control" :disabled="editOnPremMastered" />
               </div>
               <div class="col-6">
                 <label class="form-label">Abteilung</label>
@@ -846,6 +853,7 @@ import { validatePassword } from '../utils/passwordValidator.js'
 import { humanLicenseLabel } from '../utils/licenseLabel.js'
 import { cancelRunningPs, resetPsCancel, psCancelRequested } from '../utils/cancelPs'
 import { copyUpnsToClipboard } from '../utils/copyUpns.js'
+import { isOnPremMasteredUser, onPremSyncEditHint } from '../utils/userSync.js'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
@@ -1406,6 +1414,7 @@ const editModal = reactive({ show: false, user: null, saving: false })
 const editForm = reactive({ givenName: '', surname: '', displayName: '', department: '', jobTitle: '', officeLocation: '', accountEnabled: true, usageLocation: '' })
 const editInitialLicenseIds = ref([])
 const editSelectedLicenseIds = ref([])
+const editOnPremMastered = computed(() => isOnPremMasteredUser(editModal.user))
 
 function isLicenseSelected(skuId) {
   const id = String(skuId || '')
@@ -1438,16 +1447,33 @@ function openEdit(user) {
 async function saveUser() {
   const upn = editModal.user.userPrincipalName
   editModal.saving = true
-  const ok = await usersStore.updateUser({
+  const payload = {
     upn,
-    ...editForm
-  })
+    department: editForm.department,
+    jobTitle: editForm.jobTitle,
+    officeLocation: editForm.officeLocation,
+    accountEnabled: editForm.accountEnabled,
+    usageLocation: editForm.usageLocation
+  }
+  if (!editOnPremMastered.value) {
+    payload.givenName = editForm.givenName
+    payload.surname = editForm.surname
+    payload.displayName = editForm.displayName
+  }
+  const ok = await usersStore.updateUser(payload)
   if (!ok) {
     editModal.saving = false
     return
   }
   const idx = usersStore.users.findIndex((u) => u.userPrincipalName === upn)
-  if (idx !== -1) Object.assign(usersStore.users[idx], editForm)
+  if (idx !== -1) {
+    if (editOnPremMastered.value) {
+      const { givenName, surname, displayName, ...cloudFields } = editForm
+      Object.assign(usersStore.users[idx], cloudFields)
+    } else {
+      Object.assign(usersStore.users[idx], editForm)
+    }
+  }
 
   const initial = editInitialLicenseIds.value
   const selected = [...editSelectedLicenseIds.value]

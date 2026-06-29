@@ -85,7 +85,7 @@ try {
 Write-Host "Lade Benutzerliste..."
 $usersData = @()
 try {
-    $selectFields = "id,userPrincipalName,displayName,givenName,surname,department,jobTitle,officeLocation,accountEnabled,usageLocation,assignedLicenses,mail,mobilePhone,createdDateTime,signInActivity"
+    $selectFields = "id,userPrincipalName,displayName,givenName,surname,department,jobTitle,officeLocation,accountEnabled,usageLocation,assignedLicenses,mail,mobilePhone,createdDateTime,signInActivity,onPremisesSyncEnabled"
     # Manual paging (instead of Get-MgUser -All) so we can log progress while loading, not only after.
     $users = New-Object System.Collections.Generic.List[object]
     $next = "/v1.0/users?`$select=$selectFields&`$top=999"
@@ -125,6 +125,7 @@ try {
             assignedLicenses    = $assignedLics
             createdDateTime     = $user.createdDateTime
             lastActivityDateTime = $lastActivity
+            onPremisesSyncEnabled = ($user.onPremisesSyncEnabled -eq $true)
         }
     }
     Write-Host "Benutzer geladen: $($usersData.Count)"
