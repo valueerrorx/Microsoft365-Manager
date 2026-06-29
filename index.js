@@ -730,9 +730,15 @@ async function runPsScriptBody(scriptRelPath, args = [], onLog = null) {
     ...(accessToken ? { MS365_GRAPH_ACCESS_TOKEN: accessToken } : {})
   }
 
-  const PS_TIMEOUT_MS = scriptRelPath === 'scripts/add-group-members.ps1'
-    ? 15 * 60 * 1000
-    : 5 * 60 * 1000
+  const PS_TIMEOUT_MS = (() => {
+    if (scriptRelPath === 'scripts/backup-tenant.ps1' || scriptRelPath === 'scripts/restore-tenant.ps1') {
+      return 90 * 60 * 1000
+    }
+    if (scriptRelPath === 'scripts/add-group-members.ps1') {
+      return 15 * 60 * 1000
+    }
+    return 5 * 60 * 1000
+  })()
   const psCwd = path.dirname(tmpScript)
   const stdio = process.platform === 'win32'
     ? ['pipe', 'pipe', 'pipe']

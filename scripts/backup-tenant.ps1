@@ -45,6 +45,100 @@ function Get-GraphAll {
     return $items
 }
 
+# Collect userPrincipalName values from one Graph collection page body.
+function Get-UpnsFromGraphPage {
+    param($Body)
+    $out = New-Object System.Collections.Generic.List[string]
+    if ($null -eq $Body) { return @() }
+    $vals = $Body['value']
+    if ($null -eq $vals) { return @() }
+    foreach ($item in @($vals)) {
+        $upn = [string]$item.userPrincipalName
+        if ($upn) { $out.Add($upn) }
+    }
+    return $out.ToArray()
+}
+
+# Page a members/owners collection and return all UPNs.
+function Get-GraphMemberUpns {
+    param([string]$Uri)
+    $out = New-Object System.Collections.Generic.List[string]
+    $next = $Uri
+    while ($next) {
+        $resp = Invoke-MgGraphRequest -Method GET -Uri $next -OutputType HashTable -ErrorAction Stop
+        foreach ($upn in @(Get-UpnsFromGraphPage $resp)) { $out.Add($upn) }
+        $next = $resp['@odata.nextLink']
+    }
+    return $out.ToArray()
+}
+
+# Run up to 20 parallel GETs via Graph $batch; returns map requestId -> response hashtable.
+function Invoke-GraphBatchGet {
+    param([array]$Requests)
+    if (-not $Requests -or $Requests.Count -eq 0) { return @{} }
+    $resp = Invoke-MgGraphRequest -Method POST -Uri '/v1.0/$batch' -Body @{ requests = @($Requests) } -OutputType HashTable -ErrorAction Stop
+    $map = @{}
+    foreach ($r in @($resp['responses'])) {
+        $map[[string]$r['id']] = $r
+    }
+    return $map
+}
+
+# Fetch members + owners for many groups using Graph $batch (10 groups -> 20 GETs per round).
+function Get-GroupMembershipBackupBatch {
+    param([array]$Groups)
+    $membersById = @{}
+    $ownersById = @{}
+    $batchSize = 10
+    $total = @($Groups).Count
+    if ($total -eq 0) { return @{ membersById = $membersById; ownersById = $ownersById } }
+
+    for ($offset = 0; $offset -lt $total; $offset += $batchSize) {
+        $end = [Math]::Min($offset + $batchSize - 1, $total - 1)
+        $chunk = @($Groups[$offset..$end])
+        $batchNum = [int]($offset / $batchSize) + 1
+        $batchTotal = [Math]::Ceiling($total / $batchSize)
+        Write-Host "  Batch $batchNum/$batchTotal (Gruppen $($offset + 1)-$($end + 1) von $total)..."
+
+        $requests = New-Object System.Collections.Generic.List[hashtable]
+        foreach ($grp in $chunk) {
+            $gid = [string]$grp.id
+            if (-not $gid) { continue }
+            $enc = [uri]::EscapeDataString($gid)
+            $requests.Add(@{ id = "m-$gid"; method = 'GET'; url = "/groups/$enc/members?`$select=userPrincipalName&`$top=999" })
+            $requests.Add(@{ id = "o-$gid"; method = 'GET'; url = "/groups/$enc/owners?`$select=userPrincipalName&`$top=999" })
+        }
+
+        $responses = Invoke-GraphBatchGet -Requests $requests.ToArray()
+        foreach ($grp in $chunk) {
+            $gid = [string]$grp.id
+            if (-not $gid) { continue }
+            $enc = [uri]::EscapeDataString($gid)
+            foreach ($pair in @(
+                @{ key = 'members'; reqId = "m-$gid"; rel = 'members' }
+                @{ key = 'owners'; reqId = "o-$gid"; rel = 'owners' }
+            )) {
+                $uri = "/v1.0/groups/$enc/$($pair.rel)?`$select=userPrincipalName&`$top=999"
+                $r = $responses[[string]$pair.reqId]
+                $status = if ($r) { [int]$r['status'] } else { 0 }
+                if ($status -ge 200 -and $status -lt 300) {
+                    $body = $r['body']
+                    if ($body['@odata.nextLink']) {
+                        $upns = @(Get-GraphMemberUpns $uri)
+                    } else {
+                        $upns = @(Get-UpnsFromGraphPage $body)
+                    }
+                } else {
+                    $upns = @(Get-GraphMemberUpns $uri)
+                }
+                if ($pair.key -eq 'members') { $membersById[$gid] = $upns }
+                else { $ownersById[$gid] = $upns }
+            }
+        }
+    }
+    return @{ membersById = $membersById; ownersById = $ownersById }
+}
+
 # Map Intune assignment groupId to mailNickname for restore-friendly backup.
 $script:GroupNickCache = @{}
 function Resolve-GroupMailNickname {
@@ -150,22 +244,30 @@ try {
         Write-Host "Sichere Gruppen..."
         $g = Get-GraphAll "/v1.0/groups?`$select=id,displayName,mailNickname,groupTypes,securityEnabled,mailEnabled,visibility,description&`$top=999"
         $totalGroups = @($g).Count
-        Write-Host "  $totalGroups Gruppen gefunden, lade Mitglieder..."
-        $groupsOut = New-Object System.Collections.Generic.List[object]
+        Write-Host "  $totalGroups Gruppen gefunden, filtere statische Gruppen..."
+        $staticGroups = New-Object System.Collections.Generic.List[object]
         $skippedGroups = 0
-        $gi = 0
         foreach ($grp in $g) {
-            $gi++
             $types = @()
             if ($null -ne $grp.groupTypes) { $types = @($grp.groupTypes) }
-            # Dynamic-membership groups derive members from a rule; re-importing static members would be wrong.
             if ($types -contains 'DynamicMembership') {
                 $skippedGroups++
                 continue
             }
-            Write-Host "  [$gi/$totalGroups] $([string]$grp.displayName)"
-            $members = @(Get-GraphAll "/v1.0/groups/$($grp.id)/members?`$select=userPrincipalName&`$top=999" | ForEach-Object { [string]$_.userPrincipalName } | Where-Object { $_ })
-            $owners = @(Get-GraphAll "/v1.0/groups/$($grp.id)/owners?`$select=userPrincipalName&`$top=999" | ForEach-Object { [string]$_.userPrincipalName } | Where-Object { $_ })
+            $staticGroups.Add($grp)
+        }
+        $staticList = $staticGroups.ToArray()
+        Write-Host "  $($staticList.Count) statische Gruppen, lade Mitglieder/Besitzer (Graph Batch)..."
+        $membership = Get-GroupMembershipBackupBatch -Groups $staticList
+        $membersById = $membership.membersById
+        $ownersById = $membership.ownersById
+        $groupsOut = New-Object System.Collections.Generic.List[object]
+        foreach ($grp in $staticList) {
+            $gid = [string]$grp.id
+            $types = @()
+            if ($null -ne $grp.groupTypes) { $types = @($grp.groupTypes) }
+            $members = @($membersById[$gid])
+            $owners = @($ownersById[$gid])
             $groupsOut.Add(@{
                 displayName     = [string]$grp.displayName
                 mailNickname    = [string]$grp.mailNickname
