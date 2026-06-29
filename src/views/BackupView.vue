@@ -50,11 +50,18 @@
                             <span style="color:#8b949e;font-size:0.8rem;"> — Verzeichnisrollen + zugewiesene Benutzer</span>
                         </label>
                     </div>
-                    <div class="form-check mb-3">
+                    <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="bkIntune" v-model="sel.intunePolicies" />
                         <label class="form-check-label" for="bkIntune">
-                            <strong>Intune-Richtlinien</strong>
-                            <span style="color:#8b949e;font-size:0.8rem;"> — Settings Catalog + Compliance (keine Apps)</span>
+                            <strong>Intune-Geräterichtlinien</strong>
+                            <span style="color:#8b949e;font-size:0.8rem;"> — Settings Catalog + Compliance</span>
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="bkIntuneApps" v-model="sel.intuneAppPolicies" />
+                        <label class="form-check-label" for="bkIntuneApps">
+                            <strong>Intune App-Richtlinien</strong>
+                            <span style="color:#8b949e;font-size:0.8rem;"> — App-Schutz + App-Konfiguration (iOS/Android/Windows)</span>
                         </label>
                     </div>
 
@@ -62,7 +69,7 @@
                         <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i>
                         Gast-Konten, synchronisierte Benutzer und dynamische Gruppen werden ausgelassen — sie lassen sich nicht sauber wiederherstellen.
                         Geräte sind über die API nicht wiederherstellbar und daher nicht enthalten.
-                        Intune: nur Regeln/Zuweisungen, keine App-Pakete.
+                        Intune: Regeln/Zuweisungen und App-Schutz/Konfiguration — keine App-Installationspakete (.ipa/.apk).
                     </div>
 
                     <div class="d-flex gap-2">
@@ -123,10 +130,16 @@
                                 <strong>Rollen</strong> <span style="color:#8b949e;font-size:0.8rem;">({{ preview.counts.roles }})</span>
                             </label>
                         </div>
-                        <div class="form-check mb-3">
+                        <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" id="rsIntune" v-model="rsel.intunePolicies" :disabled="!preview.counts.intunePolicies" />
                             <label class="form-check-label" for="rsIntune">
-                                <strong>Intune-Richtlinien</strong> <span style="color:#8b949e;font-size:0.8rem;">({{ preview.counts.intunePolicies }})</span>
+                                <strong>Intune-Geräterichtlinien</strong> <span style="color:#8b949e;font-size:0.8rem;">({{ preview.counts.intunePolicies }})</span>
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="rsIntuneApps" v-model="rsel.intuneAppPolicies" :disabled="!preview.counts.intuneAppPolicies" />
+                            <label class="form-check-label" for="rsIntuneApps">
+                                <strong>Intune App-Richtlinien</strong> <span style="color:#8b949e;font-size:0.8rem;">({{ preview.counts.intuneAppPolicies }})</span>
                             </label>
                         </div>
 
@@ -179,8 +192,8 @@ const authStore = useAuthStore()
 const tab = ref('create')
 
 // --- Create ---
-const sel = reactive({ users: true, groups: true, roles: true, intunePolicies: false })
-const anySelected = computed(() => sel.users || sel.groups || sel.roles || sel.intunePolicies)
+const sel = reactive({ users: true, groups: true, roles: true, intunePolicies: false, intuneAppPolicies: false })
+const anySelected = computed(() => sel.users || sel.groups || sel.roles || sel.intunePolicies || sel.intuneAppPolicies)
 
 async function runBackup() {
     const categories = []
@@ -188,15 +201,16 @@ async function runBackup() {
     if (sel.groups) categories.push('groups')
     if (sel.roles) categories.push('roles')
     if (sel.intunePolicies) categories.push('intunePolicies')
+    if (sel.intuneAppPolicies) categories.push('intuneAppPolicies')
     await backupStore.runBackup(categories)
 }
 
 // --- Restore ---
 const preview = ref(null)
-const rsel = reactive({ users: false, groups: false, roles: false, intunePolicies: false })
+const rsel = reactive({ users: false, groups: false, roles: false, intunePolicies: false, intuneAppPolicies: false })
 const startPassword = ref('')
 const pwValid = computed(() => validatePassword(startPassword.value).valid)
-const anyRestoreSelected = computed(() => rsel.users || rsel.groups || rsel.roles || rsel.intunePolicies)
+const anyRestoreSelected = computed(() => rsel.users || rsel.groups || rsel.roles || rsel.intunePolicies || rsel.intuneAppPolicies)
 const tenantMismatch = computed(() =>
     !!preview.value?.tenantDomain && !!authStore.tenantDomain && preview.value.tenantDomain !== authStore.tenantDomain
 )
@@ -216,6 +230,7 @@ async function pickBackup() {
     rsel.groups = !!res.counts.groups
     rsel.roles = !!res.counts.roles
     rsel.intunePolicies = !!res.counts.intunePolicies
+    rsel.intuneAppPolicies = !!res.counts.intuneAppPolicies
 }
 
 async function runRestore() {
@@ -225,6 +240,7 @@ async function runRestore() {
     if (rsel.groups) categories.push('groups')
     if (rsel.roles) categories.push('roles')
     if (rsel.intunePolicies) categories.push('intunePolicies')
+    if (rsel.intuneAppPolicies) categories.push('intuneAppPolicies')
     await backupStore.runRestore({
         backupPath: preview.value.filePath,
         categories,

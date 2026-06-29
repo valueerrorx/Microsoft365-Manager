@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
-# Restores selected categories (users / groups / roles / intunePolicies) from a backup JSON.
+# Restores selected categories (users / groups / roles / intunePolicies / intuneAppPolicies) from a backup JSON.
 # Conflict policy: existing objects (matched by UPN / mailNickname / roleTemplateId) are skipped, only missing ones are created.
 param(
     [Parameter(Mandatory = $true)]
@@ -128,6 +128,25 @@ function Set-IntunePolicyAssignments {
         Invoke-MgGraphRequest -Method POST -Uri $AssignUri -Body @{ assignments = $assignList.ToArray() } -ErrorAction Stop | Out-Null
     } catch {
         $Errors.Add("Zuweisungen $PolicyLabel : $($_.Exception.Message)")
+    }
+}
+
+# POST managed-app links for app protection / configuration policies.
+function Set-AppPolicyApps {
+    param(
+        [string]$AppsUri,
+        [array]$Apps,
+        [System.Collections.Generic.List[string]]$Errors,
+        [string]$PolicyLabel
+    )
+    foreach ($app in @($Apps)) {
+        $body = ConvertTo-HashtableDeep $app
+        if (-not $body) { continue }
+        try {
+            Invoke-MgGraphRequest -Method POST -Uri $AppsUri -Body $body -ErrorAction Stop | Out-Null
+        } catch {
+            $Errors.Add("App $PolicyLabel : $($_.Exception.Message)")
+        }
     }
 }
 
@@ -343,6 +362,54 @@ try {
         }
         $summary['intunePolicies'] = @{ created = $created; skipped = $skipped; failed = $failed; errors = $errors.ToArray() }
         Write-Host "  Intune-Richtlinien: erstellt $created, uebersprungen $skipped, fehlgeschlagen $failed"
+    }
+
+    if ($wanted -contains 'intuneapppolicies' -and $cats.intuneAppPolicies) {
+        $list = @($cats.intuneAppPolicies)
+        $total = $list.Count
+        Write-Host "Stelle Intune App-Richtlinien wieder her ($total)..."
+        $created = 0; $skipped = 0; $failed = 0
+        $errors = New-Object System.Collections.Generic.List[string]
+        $kindToSegment = @{
+            iosAppProtection            = 'iosManagedAppProtections'
+            androidAppProtection        = 'androidManagedAppProtections'
+            windowsAppProtection        = 'windowsManagedAppProtections'
+            targetedAppConfiguration    = 'targetedManagedAppConfigurations'
+            iosMobileAppConfiguration   = 'iosMobileAppConfigurations'
+            androidMobileAppConfiguration = 'androidManagedStoreAppConfigurations'
+        }
+        $existingApp = @{}
+        foreach ($seg in @($kindToSegment.Values | Select-Object -Unique)) {
+            foreach ($p in @(Get-GraphAll "/v1.0/deviceAppManagement/$seg")) {
+                $lbl = [string]$p.displayName
+                if ($lbl) { $existingApp["${seg}::$lbl"] = $true }
+            }
+        }
+        $i = 0
+        foreach ($pol in $list) {
+            $i++
+            $kind = [string]$pol.kind
+            $label = [string]$pol.displayName
+            $seg = $kindToSegment[$kind]
+            Write-Host "  [$i/$total] $label ($kind)"
+            if (-not $label -or -not $seg) { continue }
+            if ($existingApp.ContainsKey("${seg}::$label")) { $skipped++; continue }
+            try {
+                $body = ConvertTo-HashtableDeep $pol.payload
+                if (-not $body) { throw 'Payload fehlt' }
+                $newPol = Invoke-MgGraphRequest -Method POST -Uri "/v1.0/deviceAppManagement/$seg" -Body $body -ErrorAction Stop
+                $policyId = [string]$newPol.id
+                if (-not $policyId) { throw 'Policy-ID fehlt in Antwort' }
+                Set-AppPolicyApps -AppsUri "/v1.0/deviceAppManagement/$seg/$policyId/apps" -Apps @($pol.apps) -Errors $errors -PolicyLabel $label
+                Set-IntunePolicyAssignments -AssignUri "/v1.0/deviceAppManagement/$seg/$policyId/assign" -Assignments @($pol.assignments) -Errors $errors -PolicyLabel $label
+                $created++
+            } catch {
+                $failed++
+                $errors.Add("$label : $($_.Exception.Message)")
+            }
+        }
+        $summary['intuneAppPolicies'] = @{ created = $created; skipped = $skipped; failed = $failed; errors = $errors.ToArray() }
+        Write-Host "  App-Richtlinien: erstellt $created, uebersprungen $skipped, fehlgeschlagen $failed"
     }
 
     $result = @{ status = "ok"; message = "Wiederherstellung abgeschlossen"; summary = $summary } | ConvertTo-Json -Depth 12 -Compress

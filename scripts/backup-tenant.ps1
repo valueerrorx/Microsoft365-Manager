@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
-# Exports tenant objects (users / groups / roles / intunePolicies) as one JSON payload for backup.
+# Exports tenant objects (users / groups / roles / intunePolicies / intuneAppPolicies) as one JSON payload for backup.
 # Restore-friendly: each object carries stable match keys (UPN, mailNickname) — no passwords.
 param(
     [Parameter(Mandatory = $true)]
@@ -187,6 +187,78 @@ function Copy-GraphPayload {
     return $ht
 }
 
+# Build a portable managed-app entry (bundleId/packageId) for app-policy restore.
+function Get-PortableManagedAppEntry {
+    param($AppRow)
+    if ($null -eq $AppRow) { return $null }
+    $ident = [string]$AppRow['mobileAppIdentifier']
+    if ($ident) {
+        $otype = [string]$AppRow['@odata.type']
+        if (-not $otype) { $otype = '#microsoft.graph.managedMobileApp' }
+        return @{ '@odata.type' = $otype; mobileAppIdentifier = $ident }
+    }
+    $appId = [string]$AppRow['appId']
+    if (-not $appId) { $appId = [string]$AppRow['id'] }
+    if (-not $appId) { return $null }
+    try {
+        $ma = Invoke-MgGraphRequest -Method GET -Uri "/v1.0/deviceAppManagement/mobileApps/$appId" -OutputType HashTable -ErrorAction Stop
+        $bundle = [string]$ma['bundleId']
+        $package = [string]$ma['packageId']
+        $resolved = if ($bundle) { $bundle } elseif ($package) { $package } else { '' }
+        if (-not $resolved) { return $null }
+        return @{ '@odata.type' = '#microsoft.graph.managedMobileApp'; mobileAppIdentifier = $resolved }
+    } catch {
+        return $null
+    }
+}
+
+# Export apps linked to an app protection/configuration policy.
+function Get-AppPolicyAppsBackup {
+    param([string]$AppsUri)
+    $out = New-Object System.Collections.Generic.List[object]
+    foreach ($a in @(Get-GraphAll $AppsUri)) {
+        $entry = Get-PortableManagedAppEntry $a
+        if ($entry) { $out.Add($entry) }
+    }
+    return $out.ToArray()
+}
+
+# Backup one deviceAppManagement policy collection (app protection or app configuration).
+function Backup-DeviceAppPolicyCollection {
+    param(
+        [string]$Kind,
+        [string]$CollectionSegment,
+        [bool]$IncludeApps = $true
+    )
+    $results = New-Object System.Collections.Generic.List[object]
+    $listUri = "/v1.0/deviceAppManagement/$CollectionSegment"
+    $policySkip = @('id', 'createdDateTime', 'lastModifiedDateTime', 'version', 'isAssigned', 'deployedAppCount', 'assignments', 'apps')
+    $list = @(Get-GraphAll $listUri)
+    $total = $list.Count
+    $i = 0
+    foreach ($p in $list) {
+        $i++
+        $polId = [string]$p.id
+        if (-not $polId) { continue }
+        $label = [string]$p.displayName
+        if (-not $label) { $label = [string]$p.name }
+        Write-Host "  [$Kind $i/$total] $label"
+        $full = Invoke-MgGraphRequest -Method GET -Uri "$listUri/$polId" -OutputType HashTable -ErrorAction Stop
+        $apps = @()
+        if ($IncludeApps) {
+            $apps = @(Get-AppPolicyAppsBackup "$listUri/$polId/apps")
+        }
+        $results.Add(@{
+            kind        = $Kind
+            displayName = $label
+            payload     = (Copy-GraphPayload -Source $full -SkipKeys $policySkip)
+            apps        = $apps
+            assignments = @(Get-IntuneAssignmentTargets "$listUri/$polId/assignments")
+        })
+    }
+    return $results.ToArray()
+}
+
 $wanted = @($Categories -split ',' | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
 $catData = @{}
 
@@ -358,8 +430,34 @@ try {
         Write-Host "  Intune-Richtlinien: $($policiesOut.Count)"
     }
 
+    if ($wanted -contains 'intuneapppolicies') {
+        Write-Host "Sichere Intune App-Richtlinien..."
+        $appPoliciesOut = New-Object System.Collections.Generic.List[object]
+        $appCatalogs = @(
+            @{ kind = 'iosAppProtection'; segment = 'iosManagedAppProtections'; apps = $true }
+            @{ kind = 'androidAppProtection'; segment = 'androidManagedAppProtections'; apps = $true }
+            @{ kind = 'windowsAppProtection'; segment = 'windowsManagedAppProtections'; apps = $true }
+            @{ kind = 'targetedAppConfiguration'; segment = 'targetedManagedAppConfigurations'; apps = $true }
+            @{ kind = 'iosMobileAppConfiguration'; segment = 'iosMobileAppConfigurations'; apps = $false }
+            @{ kind = 'androidMobileAppConfiguration'; segment = 'androidManagedStoreAppConfigurations'; apps = $false }
+        )
+        foreach ($catalog in $appCatalogs) {
+            Write-Host "  Lade $($catalog.kind)..."
+            try {
+                foreach ($item in @(Backup-DeviceAppPolicyCollection -Kind $catalog.kind -CollectionSegment $catalog.segment -IncludeApps $catalog.apps)) {
+                    $appPoliciesOut.Add($item)
+                }
+            } catch {
+                Write-Host "  Warnung $($catalog.kind): $($_.Exception.Message)"
+            }
+        }
+        $catData['intuneAppPolicies'] = $appPoliciesOut.ToArray()
+        Write-Host "  App-Richtlinien gesamt: $($appPoliciesOut.Count)"
+    }
+
     $schemaVer = 1
     if ($catData.ContainsKey('intunePolicies')) { $schemaVer = 2 }
+    if ($catData.ContainsKey('intuneAppPolicies')) { $schemaVer = 3 }
 
     $payload = @{
         schemaVersion = $schemaVer

@@ -1661,7 +1661,8 @@ ipcMain.handle('open-backup-dialog', async () => {
       users: Array.isArray(cats.users) ? cats.users.length : 0,
       groups: Array.isArray(cats.groups) ? cats.groups.length : 0,
       roles: Array.isArray(cats.roles) ? cats.roles.length : 0,
-      intunePolicies: Array.isArray(cats.intunePolicies) ? cats.intunePolicies.length : 0
+      intunePolicies: Array.isArray(cats.intunePolicies) ? cats.intunePolicies.length : 0,
+      intuneAppPolicies: Array.isArray(cats.intuneAppPolicies) ? cats.intuneAppPolicies.length : 0
     }
     return {
       status: 'ok',
