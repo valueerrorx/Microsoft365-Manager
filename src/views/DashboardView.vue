@@ -44,6 +44,21 @@
       {{ usersStore.error }}
     </div>
 
+    <!-- Hybrid AD hint (tenant-level, from first user sync) -->
+    <div
+      v-if="showHybridAdHint"
+      class="p-3 rounded mb-4 d-flex align-items-center gap-3"
+      style="background:rgba(88,166,255,0.06);border:1px solid rgba(88,166,255,0.18);color:#8b949e;"
+      role="status"
+    >
+      <i class="bi bi-hdd-network fs-5" style="flex-shrink:0;color:#58a6ff;line-height:1;"></i>
+      <div style="font-size:0.85rem;line-height:1.45;">
+        <strong style="color:#e6edf3;">Hybrid mit lokalem AD</strong>
+        — Azure AD Connect aktiv{{ hybridSyncedUsersHint }}.
+        Namen synchronisierter Konten nur im lokalen AD änderbar.
+      </div>
+    </div>
+
     <!-- Stats Cards -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4 dashboard-stat-row">
       <div class="col">
@@ -308,6 +323,15 @@ const dashboardGroupsLifecycleDisplay = computed(() => {
   const n = groupsStore.lifecyclePolicyGroupCount
   return Number.isFinite(n) ? n : '—'
 })
+
+const hybridSyncedUsersHint = computed(() => {
+  const n = authStore.syncedUserCount
+  return n > 0 ? `, ${n} synchronisierte Benutzer` : ''
+})
+
+const showHybridAdHint = computed(
+  () => authStore.connected && authStore.tenantOnPremisesSync
+)
 
 async function refreshDashboardData() {
   if (dashboardRefreshing.value) return

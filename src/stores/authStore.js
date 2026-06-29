@@ -8,6 +8,8 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     connected: false,
     tenantDomain: null,
+    tenantOnPremisesSync: false,
+    syncedUserCount: 0,
     connecting: false,
     loggingOut: false,
     error: null,
@@ -66,10 +68,18 @@ export const useAuthStore = defineStore('auth', {
       this.deviceLoginCode = null
     },
 
+    // Tenant-level AD Connect flag from first Graph user list load.
+    setTenantHybridInfo({ onPremisesSyncEnabled, syncedUserCount } = {}) {
+      this.tenantOnPremisesSync = onPremisesSyncEnabled === true
+      this.syncedUserCount = Number.isFinite(syncedUserCount) ? syncedUserCount : 0
+    },
+
     setDisconnected() {
       this.connected = false
       this.connecting = false
       this.tenantDomain = null
+      this.tenantOnPremisesSync = false
+      this.syncedUserCount = 0
       this.deviceLoginCode = null
     },
 

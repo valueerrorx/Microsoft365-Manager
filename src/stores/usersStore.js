@@ -81,6 +81,10 @@ export const useUsersStore = defineStore('users', {
           })
           this.lastFetched = new Date()
           auth.setConnected(result.tenantDomain || 'unbekannt')
+          auth.setTenantHybridInfo({
+            onPremisesSyncEnabled: result.onPremisesSyncEnabled,
+            syncedUserCount: result.syncedUserCount
+          })
           auth.addLog({ type: 'success', message: `${this.users.length} Benutzer geladen` })
           auth.showToast(`${this.users.length} Benutzer geladen`, 'success')
         } else {

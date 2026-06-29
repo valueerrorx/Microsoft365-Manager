@@ -48,13 +48,15 @@ try {
 Ensure-Module "Microsoft.Graph.Users"
 Ensure-Module "Microsoft.Graph.Identity.DirectoryManagement"
 
-# Tenant-Domain ermitteln
+# Tenant-Domain und Hybrid-Sync-Status ermitteln
 $tenantDomain = ""
+$onPremisesSyncEnabled = $false
 try {
-    $org = Get-MgOrganization -Top 1
+    $org = Get-MgOrganization -Top 1 -Property VerifiedDomains,OnPremisesSyncEnabled
     $tenantDomain = ($org.VerifiedDomains | Where-Object { $_.IsDefault -eq $true } | Select-Object -ExpandProperty Name -First 1)
     if (-not $tenantDomain) { $tenantDomain = $org.VerifiedDomains[0].Name }
-    Write-Host "Tenant: $tenantDomain"
+    $onPremisesSyncEnabled = ($org.OnPremisesSyncEnabled -eq $true)
+    Write-Host "Tenant: $tenantDomain (AD-Sync: $onPremisesSyncEnabled)"
 } catch {
     Write-Host "Warnung: Tenant-Domain konnte nicht ermittelt werden"
 }
@@ -99,6 +101,7 @@ try {
 
     $totalUsers = $users.Count
     Write-Host "$totalUsers Benutzer gefunden, verarbeite..."
+    $syncedUserCount = 0
     foreach ($user in $users) {
         # Graph hashtable output uses camelCase keys.
         $lastActivity = Get-LastActivityFromSignInActivity -Sa $user.signInActivity
@@ -127,6 +130,7 @@ try {
             lastActivityDateTime = $lastActivity
             onPremisesSyncEnabled = ($user.onPremisesSyncEnabled -eq $true)
         }
+        if ($user.onPremisesSyncEnabled -eq $true) { $syncedUserCount++ }
     }
     Write-Host "Benutzer geladen: $($usersData.Count)"
 } catch {
@@ -144,11 +148,13 @@ try {
 }
 
 $output = @{
-    status       = "ok"
-    tenantDomain = $tenantDomain
-    users        = $usersData
-    licenses     = $licensesData
-    count        = $usersData.Count
+    status                = "ok"
+    tenantDomain          = $tenantDomain
+    onPremisesSyncEnabled = $onPremisesSyncEnabled
+    syncedUserCount       = $syncedUserCount
+    users                 = $usersData
+    licenses              = $licensesData
+    count                 = $usersData.Count
 } | ConvertTo-Json -Depth 6 -Compress
 
 Write-Output "###JSON_START###"
