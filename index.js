@@ -44,6 +44,9 @@ let graphTokenInflight = null
 const USE_ELECTRON_GRAPH_TOKEN = process.platform === 'win32'
 let pendingDeviceLoginCode = null
 let csvData = []
+// Device-name CSV for the device-removal view; kept separate from csvData so the
+// user flows (create/remove/password) keep their own strict Vorname+Nachname rows.
+let deviceCsvData = []
 let scheduledDirectoryRoles = null
 
 // Verbose auth/ps tracing (set MS365_AUTH_DEBUG=0 to disable).
@@ -928,9 +931,11 @@ function decodeCsvBuffer(buffer) {
   }
 }
 
-function parseCsvText(text) {
+// Splits CSV text into lines, detects the delimiter from the header and returns a
+// column lookup. Shared by the user and the device CSV parser.
+function readCsvHeader(text) {
   const lines = String(text).split(/\r?\n/).filter(l => l.trim().length > 0)
-  if (lines.length === 0) return []
+  if (lines.length === 0) return null
   const header = lines[0]
   // Pick whichever common delimiter occurs more often in the header (handles ; , and tab).
   const counts = { ';': (header.match(/;/g) || []).length, ',': (header.match(/,/g) || []).length, '\t': (header.match(/\t/g) || []).length }
@@ -951,6 +956,14 @@ function parseCsvText(text) {
     }
     return -1
   }
+
+  return { lines, delimiter, getIdx }
+}
+
+function parseCsvText(text) {
+  const parsed = readCsvHeader(text)
+  if (!parsed) return []
+  const { lines, delimiter, getIdx } = parsed
 
   const entries = []
   for (let i = 1; i < lines.length; i++) {
@@ -991,6 +1004,28 @@ function parseCsvText(text) {
       newPassword: pwd,
       forceChange: forceRaw === '1' || /true/i.test(forceRaw)
     })
+  }
+  return entries
+}
+
+// Parses a device CSV: one device display name per row. Falls back to the first
+// column when no known device-name header is present (plain one-column lists).
+function parseDeviceCsvText(text) {
+  const parsed = readCsvHeader(text)
+  if (!parsed) return []
+  const { lines, delimiter, getIdx } = parsed
+
+  const di = getIdx(['gerätename', 'geraetename', 'devicename', 'displayname', 'computername', 'hostname'])
+  // No recognizable header -> treat every line (incl. the first) as a bare device name.
+  const col = di >= 0 ? di : 0
+  const startRow = di >= 0 ? 1 : 0
+
+  const entries = []
+  for (let i = startRow; i < lines.length; i++) {
+    const parts = lines[i].split(delimiter)
+    const deviceName = (parts[col] || '').trim()
+    if (!deviceName) continue
+    entries.push({ deviceName })
   }
   return entries
 }
@@ -1139,6 +1174,7 @@ async function performDisconnectMg365({ notifyUi = true } = {}) {
   authDebug('disconnect-ms365', { graphSessionWarm: false })
   await killAllPsProcesses()
   csvData = []
+  deviceCsvData = []
   graphSessionWarm = false
   resetGraphAccessTokenState()
   resetGraphAuthUiState('disconnect-ms365')
@@ -1164,7 +1200,9 @@ ipcMain.handle('disconnect-ms365', async () => performDisconnectMg365({ notifyUi
 
 // ===================== IPC: CSV Import =====================
 
-ipcMain.handle('open-csv-dialog', async () => {
+// mode 'devices' parses a device-name list into deviceCsvData; anything else keeps
+// the default user CSV behaviour (Vorname/Nachname) in csvData.
+ipcMain.handle('open-csv-dialog', async (_event, { mode } = {}) => {
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
     title: 'CSV-Datei wählen',
     properties: ['openFile'],
@@ -1173,14 +1211,22 @@ ipcMain.handle('open-csv-dialog', async () => {
   if (canceled || !filePaths?.length) return { status: 'cancelled' }
   try {
     const buffer = await fs.readFile(filePaths[0])
-    csvData = parseCsvText(decodeCsvBuffer(buffer))
+    const text = decodeCsvBuffer(buffer)
+    if (mode === 'devices') {
+      deviceCsvData = parseDeviceCsvText(text)
+      return { status: 'ok', count: deviceCsvData.length }
+    }
+    csvData = parseCsvText(text)
     return { status: 'ok', count: csvData.length }
   } catch (e) {
     return { status: 'error', message: e?.message || 'CSV konnte nicht gelesen werden' }
   }
 })
 
-ipcMain.handle('get-csv-data', async () => ({ status: 'ok', data: csvData }))
+ipcMain.handle('get-csv-data', async (_event, { mode } = {}) => ({
+  status: 'ok',
+  data: mode === 'devices' ? deviceCsvData : csvData
+}))
 
 ipcMain.handle('set-csv-data', async (_event, data) => {
   if (!Array.isArray(data)) return { status: 'error', message: 'Invalid data' }

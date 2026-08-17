@@ -6,11 +6,31 @@
         <!-- Header -->
         <div class="page-header">
             <h1 class="page-title">Geräte entfernen</h1>
-            <p class="page-subtitle">Geräte von Schulabgängern per CSV (Besitzer) identifizieren und aus dem Tenant entfernen</p>
+            <p class="page-subtitle">Geräte per CSV (Besitzer oder Gerätename) identifizieren und aus dem Tenant entfernen</p>
         </div>
 
         <div class="content-card">
             <div class="content-card-body">
+                <!-- Matching-Modus -->
+                <div class="btn-group mb-3 align-self-start" role="group">
+                    <button
+                        class="btn btn-sm"
+                        :class="deviceMode ? 'btn-outline-secondary' : 'btn-secondary'"
+                        :disabled="running"
+                        @click="setCsvMode('users')"
+                    >
+                        <i class="bi bi-person me-1"></i> Nach Besitzer
+                    </button>
+                    <button
+                        class="btn btn-sm"
+                        :class="deviceMode ? 'btn-secondary' : 'btn-outline-secondary'"
+                        :disabled="running"
+                        @click="setCsvMode('devices')"
+                    >
+                        <i class="bi bi-pc-display me-1"></i> Nach Gerätename
+                    </button>
+                </div>
+
                 <!-- Import Area -->
                 <div class="d-flex gap-2 mb-3">
                     <button class="btn btn-primary" @click="importCsv" :disabled="running">
@@ -27,17 +47,31 @@
                         <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.5rem;">
                             <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i> CSV-Format
                         </div>
-                        <pre style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Familienname
+                        <pre v-if="deviceMode" style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Gerätename
+NB-1A-07
+PC-LAB-12</pre>
+                        <pre v-else style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Familienname
 Max;Mustermann
 Anna;Schmidt</pre>
-                        <div style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
+                        <div v-if="deviceMode" style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
+                            Eine Spalte <strong>Gerätename</strong> (auch <span style="font-family:monospace;">DeviceName</span>,
+                            <span style="font-family:monospace;">ComputerName</span>) wird exakt gegen den Anzeigenamen der
+                            geladenen Geräte abgeglichen (Groß-/Kleinschreibung egal, keine Fuzzy-Suche). Ohne erkannten
+                            Header gilt die <strong>erste Spalte</strong> als Gerätename. Kommt ein Name <strong>mehrfach</strong>
+                            vor, musst du die betroffenen Geräte manuell auswählen. Intune-verwaltete werden abgekoppelt
+                            (Retire), reine Entra-Geräte aus dem Verzeichnis gelöscht.
+                        </div>
+                        <div v-else style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
                             Nur <strong>Vorname</strong> + <strong>Familienname</strong> werden verwendet. Der Besitzer-UPN
                             wird daraus gebildet (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
                             und gegen den Besitzer der geladenen Geräte abgeglichen. Pro Schüler werden <strong>alle</strong>
                             zugeordneten Geräte entfernt: Intune-verwaltete werden abgekoppelt (Retire), reine
                             Entra-Geräte aus dem Verzeichnis gelöscht.
                         </div>
-                        <a :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+                        <a v-if="deviceMode" :href="sampleDeviceCsvUrl" download="device-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+                            <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
+                        </a>
+                        <a v-else :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
                             <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
                         </a>
                     </div>
@@ -56,7 +90,7 @@ Anna;Schmidt</pre>
                 </div>
 
                 <!-- Domain missing hint -->
-                <div v-if="devicesStore.csvEntries.length && !domain" class="mb-3">
+                <div v-if="devicesStore.csvEntries.length && !domain && !deviceMode" class="mb-3">
                     <div class="alert mb-0" style="background:rgba(210,153,34,0.1);border:1px solid rgba(210,153,34,0.3);color:#d29922;border-radius:6px;">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         Keine Tenant-Domain bekannt — bitte zuerst die Benutzer- oder Geräteliste laden.
@@ -68,19 +102,19 @@ Anna;Schmidt</pre>
                     <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3 flex-wrap" style="font-size:0.875rem;">
                             <span style="color:#3fb950;font-weight:600;">{{ devicesToRemove.length }} Geräte gefunden</span>
-                            <span style="color:#8b949e;">· {{ matchedRows.length }} Schüler mit Geräten</span>
+                            <span style="color:#8b949e;">· {{ matchedRows.length }} {{ deviceMode ? 'Zeilen mit Treffer' : 'Schüler mit Geräten' }}</span>
                             <span v-if="lazyRows.length" style="color:#58a6ff;">(inkl. {{ lazyRows.length }} bestätigt)</span>
-                            <span v-if="fuzzyRows.length" style="color:#d29922;">· {{ fuzzyRows.length }} fuzzy</span>
-                            <span style="color:#8b949e;">· {{ noMatchRows.length }} ohne Geräte</span>
+                            <span v-if="fuzzyRows.length" style="color:#d29922;">· {{ fuzzyRows.length }} {{ deviceMode ? 'mehrdeutig' : 'fuzzy' }}</span>
+                            <span style="color:#8b949e;">· {{ noMatchRows.length }} {{ deviceMode ? 'nicht gefunden' : 'ohne Geräte' }}</span>
                             <span class="d-inline-flex align-items-center gap-3 ms-2" style="font-size:0.8rem;">
                                 <label class="d-inline-flex align-items-center gap-1 mb-0" style="cursor:pointer;color:#3fb950;">
-                                    <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.green" /> mit Geräten
+                                    <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.green" /> {{ deviceMode ? 'eindeutig' : 'mit Geräten' }}
                                 </label>
                                 <label class="d-inline-flex align-items-center gap-1 mb-0" style="cursor:pointer;color:#d29922;">
-                                    <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.orange" /> fuzzy
+                                    <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.orange" /> {{ deviceMode ? 'mehrdeutig' : 'fuzzy' }}
                                 </label>
                                 <label class="d-inline-flex align-items-center gap-1 mb-0" style="cursor:pointer;color:#8b949e;">
-                                    <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.gray" /> ohne Geräte
+                                    <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.gray" /> {{ deviceMode ? 'nicht gefunden' : 'ohne Geräte' }}
                                 </label>
                             </span>
                         </div>
@@ -98,9 +132,12 @@ Anna;Schmidt</pre>
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Nachname</th>
-                                    <th>Vorname</th>
-                                    <th>Besitzer-UPN</th>
+                                    <th v-if="deviceMode">Gerätename</th>
+                                    <template v-else>
+                                        <th>Nachname</th>
+                                        <th>Vorname</th>
+                                        <th>Besitzer-UPN</th>
+                                    </template>
                                     <th @click="toggleDeviceSort" style="cursor:pointer;user-select:none;">
                                         Geräte
                                         <i v-if="deviceSortDir" class="bi" :class="deviceSortDir === 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'" style="font-size:0.7rem;"></i>
@@ -110,9 +147,12 @@ Anna;Schmidt</pre>
                             <tbody>
                                 <tr v-for="(row, i) in sortedRows" :key="i">
                                     <td style="color:#8b949e;">{{ i + 1 }}</td>
-                                    <td>{{ row.entry.nachname }}</td>
-                                    <td>{{ row.entry.vorname }}</td>
-                                    <td style="font-family:monospace;font-size:0.72rem;" :style="{ color: row.candidate ? '#d29922' : row.devices.length ? '#3fb950' : '#8b949e' }">{{ row.upn || '—' }}</td>
+                                    <td v-if="deviceMode" style="font-family:monospace;font-size:0.78rem;">{{ row.entry.deviceName }}</td>
+                                    <template v-else>
+                                        <td>{{ row.entry.nachname }}</td>
+                                        <td>{{ row.entry.vorname }}</td>
+                                        <td style="font-family:monospace;font-size:0.72rem;" :style="{ color: row.candidate ? '#d29922' : row.devices.length ? '#3fb950' : '#8b949e' }">{{ row.upn || '—' }}</td>
+                                    </template>
                                     <td>
                                         <span v-if="row.devices.length" :style="{ color: row.lazy ? '#58a6ff' : '#3fb950', 'font-size': '0.8rem' }" class="d-inline-flex align-items-center gap-2">
                                             <span>
@@ -120,8 +160,20 @@ Anna;Schmidt</pre>
                                                 {{ row.devices.length }} Gerät(e)
                                                 <span class="text-secondary">— {{ deviceSummary(row.devices) }}</span>
                                             </span>
+                                            <button v-if="row.ambiguous.length" class="btn-action" style="font-size:0.7rem;" title="Auswahl ändern" @click="openPicker(row)">
+                                                <i class="bi bi-list-check"></i>
+                                            </button>
                                             <button v-if="row.lazy" class="btn-action" style="font-size:0.7rem;" title="Bestätigung aufheben" @click="unconfirmMatch(row)">
                                                 <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </span>
+                                        <span v-else-if="row.ambiguous.length" class="d-inline-flex align-items-center gap-2" style="font-size:0.8rem;">
+                                            <span style="color:#d29922;">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ row.ambiguous.length }}x gleicher Name
+                                            </span>
+                                            <button class="btn-action" style="font-size:0.7rem;" title="Geräte auswählen" @click="openPicker(row)">
+                                                <i class="bi bi-list-check"></i> auswählen
                                             </button>
                                         </span>
                                         <span v-else-if="row.candidate" class="d-inline-flex align-items-center gap-2" style="font-size:0.8rem;">
@@ -139,6 +191,53 @@ Anna;Schmidt</pre>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auswahl bei mehrdeutigem Gerätenamen -->
+        <div v-if="pickerRow" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-list-check me-2" style="color:#d29922;"></i>
+                            Gerät auswählen — <span style="font-family:monospace;">{{ pickerRow.entry.deviceName }}</span>
+                        </h5>
+                        <button type="button" class="btn-close" @click="picker.key = null"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="font-size:0.8rem;color:#8b949e;margin-bottom:0.75rem;">
+                            {{ pickerRow.ambiguous.length }} Geräte tragen diesen Namen. Nur die angehakten werden entfernt.
+                        </div>
+                        <ul class="list-unstyled mb-0" style="max-height:320px;overflow:auto;">
+                            <li v-for="d in pickerRow.ambiguous" :key="d.id" class="py-2 border-bottom border-secondary border-opacity-25">
+                                <label class="d-flex align-items-start gap-2 mb-0" style="cursor:pointer;">
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input mt-1"
+                                        style="flex:none;"
+                                        :checked="picker.ids.includes(d.id)"
+                                        @change="togglePick(d.id)"
+                                    />
+                                    <span>
+                                        <span style="font-size:0.85rem;">{{ d.displayName }}</span>
+                                        <span class="badge rounded-pill ms-2" :style="d.isIntuneManaged ? 'background:#1f6feb;color:#fff;' : 'background:#30363d;color:#8b949e;'">
+                                            {{ d.isIntuneManaged ? 'Retire + Delete' : 'Entra-Delete' }}
+                                        </span>
+                                        <br />
+                                        <span style="font-size:0.72rem;color:#8b949e;font-family:monospace;">{{ deviceHint(d) }}</span>
+                                    </span>
+                                </label>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" @click="picker.key = null">Abbrechen</button>
+                        <button type="button" class="btn btn-primary btn-sm" @click="applyPicker">
+                            {{ picker.ids.length }} übernehmen
+                        </button>
                     </div>
                 </div>
             </div>
@@ -200,12 +299,26 @@ import { cancelRunningPs, resetPsCancel } from '../utils/cancelPs'
 const devicesStore = useDevicesStore()
 const authStore = useAuthStore()
 const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
+const sampleDeviceCsvUrl = import.meta.env.BASE_URL + 'device-list.csv'
 
 const confirmWord = 'LÖSCHEN'
 const confirm = reactive({ show: false, text: '' })
 const running = ref(false)
 
 const domain = computed(() => authStore.tenantDomain || '')
+
+// Matching-Modus: 'users' = Besitzer aus Vorname/Nachname, 'devices' = Gerätename.
+const csvMode = computed(() => devicesStore.csvMode)
+const deviceMode = computed(() => csvMode.value === 'devices')
+
+// Modus umschalten leert die Liste — Einträge des alten Modus haben im neuen keine Bedeutung.
+function setCsvMode(mode) {
+    if (devicesStore.csvMode === mode) return
+    devicesStore.csvMode = mode
+    devicesStore.csvEntries = []
+    for (const k of Object.keys(confirmedMatches)) delete confirmedMatches[k]
+    for (const k of Object.keys(confirmedDevices)) delete confirmedDevices[k]
+}
 
 // Lowercased owner-UPN -> list of devices owned by that user, for matching CSV rows.
 const devicesByOwner = computed(() => {
@@ -235,11 +348,28 @@ const ownersByLastName = computed(() => {
     return m
 })
 
-// Stable per-row key so confirmed lazy matches survive recomputes.
-const rowKey = (entry) => `${normalizeForUPN(entry.vorname)}|${normalizeForUPN(entry.nachname)}`
+// Lowercased device display name -> list of devices with that name (may be ambiguous).
+const devicesByName = computed(() => {
+    const m = new Map()
+    for (const d of devicesStore.devices) {
+        const name = String(d.displayName || '').trim().toLowerCase()
+        if (!name) continue
+        if (!m.has(name)) m.set(name, [])
+        m.get(name).push(d)
+    }
+    return m
+})
+
+// Stable per-row key so confirmed matches survive recomputes.
+const rowKey = (entry) =>
+    entry.deviceName !== undefined
+        ? String(entry.deviceName || '').trim().toLowerCase()
+        : `${normalizeForUPN(entry.vorname)}|${normalizeForUPN(entry.nachname)}`
 
 // User-confirmed lazy matches: rowKey -> chosen owner UPN.
 const confirmedMatches = reactive({})
+// User-picked devices for ambiguous names: rowKey -> array of device ids.
+const confirmedDevices = reactive({})
 
 // First-name plausibility check (same rules as the user batch view).
 function firstNameMatches(accountFirst, vn, vnFirstPart, allowExact) {
@@ -269,9 +399,22 @@ function findCandidate(entry) {
     return null
 }
 
+// Device-name mode: exact (case-insensitive) name lookup, no fuzzy matching.
+// A unique hit is queued directly; ambiguous names stay unqueued until the user picks.
+const deviceRows = computed(() =>
+    devicesStore.csvEntries.map((entry) => {
+        const key = rowKey(entry)
+        const hits = devicesByName.value.get(key) || []
+        if (hits.length <= 1) return { entry, key, devices: hits, lazy: false, candidate: null, ambiguous: [] }
+        const picked = confirmedDevices[key] || []
+        const devices = hits.filter((d) => picked.includes(d.id))
+        return { entry, key, devices, lazy: devices.length > 0, candidate: null, ambiguous: hits }
+    })
+)
+
 // Reconstruct owner-UPN per CSV row and collect that owner's devices.
 // Unmatched rows get a fuzzy candidate; confirmed ones adopt the candidate owner's devices.
-const rows = computed(() =>
+const userRows = computed(() =>
     devicesStore.csvEntries.map((entry) => {
         const upn = buildUpn(entry.vorname, entry.nachname, domain.value)
         const key = rowKey(entry)
@@ -290,22 +433,25 @@ const rows = computed(() =>
                 if (candidate) effectiveUpn = candidate.upn
             }
         }
-        return { entry, key, upn: effectiveUpn, devices, lazy, candidate }
+        return { entry, key, upn: effectiveUpn, devices, lazy, candidate, ambiguous: [] }
     })
 )
+
+const rows = computed(() => (deviceMode.value ? deviceRows.value : userRows.value))
 
 const matchedRows = computed(() => rows.value.filter((r) => r.devices.length))
 const lazyRows = computed(() => rows.value.filter((r) => r.lazy))
 const unmatchedRows = computed(() => rows.value.filter((r) => !r.devices.length))
-// Split unmatched into fuzzy-Kandidaten vs. echt ohne Geräte/Treffer.
-const fuzzyRows = computed(() => unmatchedRows.value.filter((r) => r.candidate))
-const noMatchRows = computed(() => unmatchedRows.value.filter((r) => !r.candidate))
+// Split unmatched into klärbare Zeilen (fuzzy-Kandidat bzw. mehrdeutiger Gerätename)
+// vs. echt ohne Geräte/Treffer.
+const fuzzyRows = computed(() => unmatchedRows.value.filter((r) => r.candidate || r.ambiguous.length))
+const noMatchRows = computed(() => unmatchedRows.value.filter((r) => !r.candidate && !r.ambiguous.length))
 const devicesToRemove = computed(() => matchedRows.value.flatMap((r) => r.devices))
 
 // Category filter: green = hat Geräte (inkl. bestätigt), orange = fuzzy-Kandidat, gray = keine Geräte.
 const categoryOf = (r) => {
     if (r.devices.length) return 'green'
-    if (r.candidate) return 'orange'
+    if (r.candidate || r.ambiguous.length) return 'orange'
     return 'gray'
 }
 const filters = reactive({ green: true, orange: true, gray: true })
@@ -329,9 +475,38 @@ const toggleDeviceSort = () => {
 function confirmCandidate(row) {
     if (row.candidate) confirmedMatches[row.key] = row.candidate.upn
 }
-// Undo a confirmed lazy match.
+// Undo a confirmed lazy match (both modes).
 function unconfirmMatch(row) {
     delete confirmedMatches[row.key]
+    delete confirmedDevices[row.key]
+    if (picker.key === row.key) picker.key = null
+}
+
+// Auswahl-Dialog für mehrdeutige Gerätenamen: welche der gleichnamigen Geräte gelöscht werden.
+const picker = reactive({ key: null, ids: [] })
+const pickerRow = computed(() => (picker.key ? rows.value.find((r) => r.key === picker.key) : null))
+
+function openPicker(row) {
+    picker.key = row.key
+    picker.ids = [...(confirmedDevices[row.key] || [])]
+}
+function togglePick(id) {
+    const i = picker.ids.indexOf(id)
+    if (i === -1) picker.ids.push(id)
+    else picker.ids.splice(i, 1)
+}
+function applyPicker() {
+    if (picker.ids.length) confirmedDevices[picker.key] = [...picker.ids]
+    else delete confirmedDevices[picker.key]
+    picker.key = null
+}
+
+// Kurzbeschreibung eines Geräts zur Unterscheidung gleichnamiger Einträge.
+function deviceHint(d) {
+    const parts = [d.ownerUserPrincipalName || 'kein Besitzer']
+    if (d.operatingSystem) parts.push(d.operatingSystem)
+    if (d.approximateLastSignInDateTime) parts.push(`zuletzt ${String(d.approximateLastSignInDateTime).slice(0, 10)}`)
+    return parts.join(' · ')
 }
 
 // Short "2 Intune / 1 Entra" style summary for the preview row.
@@ -345,13 +520,14 @@ function deviceSummary(devices) {
 }
 
 async function importCsv() {
-    const result = await window.ipcRenderer.invoke('open-csv-dialog')
+    const mode = csvMode.value
+    const result = await window.ipcRenderer.invoke('open-csv-dialog', { mode })
     if (result.status === 'cancelled') return
     if (result.status !== 'ok') {
         authStore.showToast(result.message || 'Importfehler', 'error')
         return
     }
-    const dataResult = await window.ipcRenderer.invoke('get-csv-data')
+    const dataResult = await window.ipcRenderer.invoke('get-csv-data', { mode })
     if (dataResult.status === 'ok') {
         devicesStore.csvEntries = dataResult.data
         authStore.showToast(`${dataResult.data.length} Einträge importiert`, 'success')

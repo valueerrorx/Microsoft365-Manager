@@ -13,8 +13,10 @@ export const useDevicesStore = defineStore('devices', {
     loading: false,
     error: null,
     lastFetched: null,
-    // Imported owner CSV for the device-removal view; kept here so it survives navigation.
-    csvEntries: []
+    // Imported CSV for the device-removal view; kept here so it survives navigation.
+    // Rows are {vorname,nachname} in 'users' mode and {deviceName} in 'devices' mode.
+    csvEntries: [],
+    csvMode: 'users'
   }),
 
   getters: {
