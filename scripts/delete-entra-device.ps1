@@ -44,21 +44,6 @@ try {
     $lookupId = [string]$dev.DeviceId
     if ([string]::IsNullOrWhiteSpace($lookupId)) { $lookupId = $id }
 
-    $escaped = $lookupId -replace "'", "''"
-    $listUri = "/v1.0/deviceManagement/managedDevices?`$filter=azureADDeviceId eq '$escaped'&`$select=id&`$top=1"
-    try {
-        $md = Invoke-MgGraphRequest -Method GET -Uri $listUri -ErrorAction Stop
-        if (@($md.value).Count -gt 0) {
-            Write-JsonResult @{
-                status   = "error"
-                message  = "Geraet ist noch in Intune eingeschrieben. Zuerst Retire ausfuehren, danach optional Entra-Eintrag loeschen."
-                deviceId = $id
-            } 1
-        }
-    } catch {
-        Write-Host "Hinweis: Intune-Pruefung uebersprungen: $($_.Exception.Message)"
-    }
-
     Write-Host "Loesche Entra-Geraet: $($dev.DisplayName) ($id)"
     Remove-MgDevice -DeviceId $id -ErrorAction Stop
 
