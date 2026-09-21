@@ -113,7 +113,7 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
             <div style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
               Trennzeichen: Semikolon oder Komma. Encoding: UTF-8 oder Windows-1252 (Excel).
             </div>
-            <a :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+            <a href="#" @click.prevent="downloadSampleCsv(sampleCsvUrl, 'user-list.csv')" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
               <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
             </a>
           </div>
@@ -213,6 +213,7 @@ import PasswordInput from '../components/PasswordInput.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
 import { normalizeForUPN } from '../utils/upn.js'
 import { cancelRunningPs } from '../utils/cancelPs'
+import { downloadSampleCsv } from '../utils/downloadFile.js'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()

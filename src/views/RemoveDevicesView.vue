@@ -68,10 +68,10 @@ Anna;Schmidt</pre>
                             zugeordneten Geräte entfernt: Intune-verwaltete werden abgekoppelt (Retire), reine
                             Entra-Geräte aus dem Verzeichnis gelöscht.
                         </div>
-                        <a v-if="deviceMode" :href="sampleDeviceCsvUrl" download="device-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+                        <a v-if="deviceMode" href="#" @click.prevent="downloadSampleCsv(sampleDeviceCsvUrl, 'device-list.csv')" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
                             <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
                         </a>
-                        <a v-else :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+                        <a v-else href="#" @click.prevent="downloadSampleCsv(sampleCsvUrl, 'user-list.csv')" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
                             <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
                         </a>
                     </div>
@@ -295,6 +295,7 @@ import { useDevicesStore } from '../stores/devicesStore'
 import { useAuthStore } from '../stores/authStore'
 import { buildUpn, normalizeForUPN } from '../utils/upn.js'
 import { cancelRunningPs, resetPsCancel } from '../utils/cancelPs'
+import { downloadSampleCsv } from '../utils/downloadFile.js'
 
 const devicesStore = useDevicesStore()
 const authStore = useAuthStore()

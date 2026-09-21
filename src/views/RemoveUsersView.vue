@@ -40,7 +40,7 @@ Anna;Schmidt;202</pre>
                             (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
                             und gegen die geladene Benutzerliste abgeglichen.
                         </div>
-                        <a :href="sampleCsvUrl" download="user-list.csv" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
+                        <a href="#" @click.prevent="downloadSampleCsv(sampleCsvUrl, 'user-list.csv')" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
                             <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
                         </a>
                         <div style="font-size:0.78rem;color:#d29922;margin-top:0.75rem;">
@@ -391,6 +391,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useGroupsStore } from '../stores/groupsStore'
 import { buildUpn, normalizeForUPN, resolveUpnForEntry } from '../utils/upn.js'
 import { cancelRunningPs } from '../utils/cancelPs'
+import { downloadSampleCsv } from '../utils/downloadFile.js'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
