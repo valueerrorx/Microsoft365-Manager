@@ -104,6 +104,7 @@ jobs:
         run: |
           "AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" | Out-File -FilePath $env:GITHUB_ENV -Append
           "AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "AZURE_AUTHORITY_HOST=https://login.microsoftonline.com/" | Out-File -FilePath $env:GITHUB_ENV -Append
           "AZURE_FEDERATED_TOKEN_FILE=$(Join-Path $env:RUNNER_TEMP 'azure-federated-token.txt')" | Out-File -FilePath $env:GITHUB_ENV -Append
       - uses: actions/setup-node@v4
         with:
