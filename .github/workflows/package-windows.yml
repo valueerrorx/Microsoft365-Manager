@@ -15,6 +15,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
+    environment: release        # must match the federated credential subject
     steps:
       - uses: actions/checkout@v4
       - name: Azure login (OIDC)
