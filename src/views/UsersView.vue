@@ -60,8 +60,11 @@
               searchable
             />
           </div>
-          <div class="col-auto ms-auto">
+          <div class="col-auto ms-auto d-flex align-items-center gap-2">
             <span style="font-size:0.8rem;color:#8b949e;">{{ filteredUsers.length }} Treffer</span>
+            <button class="btn btn-outline-secondary btn-sm" :disabled="!filteredUsers.length" @click="exportUsersCsv">
+              <i class="bi bi-download me-1"></i> CSV Export
+            </button>
           </div>
         </div>
       </div>
@@ -854,6 +857,8 @@ import { humanLicenseLabel } from '../utils/licenseLabel.js'
 import { cancelRunningPs, resetPsCancel, psCancelRequested } from '../utils/cancelPs'
 import { copyUpnsToClipboard } from '../utils/copyUpns.js'
 import { isOnPremMasteredUser, onPremSyncEditHint } from '../utils/userSync.js'
+import { toCsv, csvBlob } from '../utils/csvExport.js'
+import { downloadBlob } from '../utils/downloadFile.js'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
@@ -1400,6 +1405,23 @@ function licenseLabel(skuId) {
   const sku = usersStore.licenseMap[skuId]
   if (!sku) return skuId?.slice(0, 8) || '?'
   return humanLicenseLabel(sku.skuPartNumber)
+}
+
+function exportUsersCsv() {
+  const header = ['Name', 'UPN', 'Abteilung', 'Status', 'Lizenzen', 'Jobtitel', 'Büro', 'Letzte Aktivität']
+  const rows = filteredUsers.value.map((u) => [
+    nameOf(u),
+    u.userPrincipalName || '',
+    u.department || '',
+    u.accountEnabled ? 'Aktiv' : 'Deaktiviert',
+    (u.assignedLicenses || []).map((lic) => licenseLabel(lic.skuId)).join('; '),
+    u.jobTitle || '',
+    u.officeLocation || '',
+    formatUserDateTime(u.lastActivityDateTime)
+  ])
+  const blob = csvBlob(toCsv(header, rows))
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadBlob(blob, `benutzer-export-${stamp}.csv`)
 }
 
 function licenseFreeTenant(sku) {
