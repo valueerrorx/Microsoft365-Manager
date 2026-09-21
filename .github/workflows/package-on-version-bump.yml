@@ -10,6 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  id-token: write               # OIDC token for Azure Trusted Signing
   contents: read
 
 concurrency:
@@ -89,21 +90,35 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Decode code signing certificate
-        env:
-          P12_BASE64: ${{ secrets.P12_BASE64 }}
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # electron-builder's Invoke-TrustedSigning authenticates via Azure.Identity EnvironmentCredential,
+      # which needs the federated token on disk plus the matching env vars
+      - name: Set Azure credential env for electron-builder
+        shell: pwsh
         run: |
-          [System.IO.File]::WriteAllBytes('./certificate.p12', [System.Convert]::FromBase64String($env:P12_BASE64))
+          "AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "AZURE_FEDERATED_TOKEN_FILE=$(Join-Path $env:RUNNER_TEMP 'azure-federated-token.txt')" | Out-File -FilePath $env:GITHUB_ENV -Append
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
+      # OIDC assertions expire after ~5 min, so refresh immediately before the build signs
+      - name: Refresh Azure federated token
+        shell: pwsh
+        run: |
+          $token = (Invoke-RestMethod -Uri "$env:ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" `
+            -Headers @{ Authorization = "Bearer $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN" }).value
+          Set-Content -Path $env:AZURE_FEDERATED_TOKEN_FILE -Value $token -NoNewline
       - run: npm run build
         env:
           ELECTRON_BUILDER_PUBLISH: never
-          CSC_LINK: file://./certificate.p12
-          CSC_KEY_PASSWORD: ${{ secrets.P12_PASSWORD }}
       - uses: actions/upload-artifact@v4
         with:
           name: windows-dist
