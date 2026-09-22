@@ -3,6 +3,7 @@
 
 import { defineStore } from 'pinia'
 import { useAuthStore } from './authStore'
+import { useUpnOrderStore } from './upnOrderStore'
 import { a3LicenseBucket, licenseListSortRank } from '../utils/licenseLabel.js'
 
 export const useUsersStore = defineStore('users', {
@@ -526,6 +527,7 @@ export const useUsersStore = defineStore('users', {
 
     async runBulkCreate() {
       const auth = useAuthStore()
+      const upnOrder = useUpnOrderStore().order
       this.bulkRunning = true
       this.bulkLogs = []
       this.failedUsers = []
@@ -548,7 +550,7 @@ export const useUsersStore = defineStore('users', {
       auth.addLog({ type: 'info', message: `${syncResult.count} Einträge übertragen, PowerShell läuft...` })
 
       try {
-        const result = await window.ipcRenderer.invoke('run-password-update')
+        const result = await window.ipcRenderer.invoke('run-password-update', { upnOrder })
         this.failedUsers = result.failedUsers || []
         this.failedUserDetails = result.failedUserDetails || {}
         if (result.status === 'ok') {

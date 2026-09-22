@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) Mag. Thomas Michael Weissel <valueerror@gmail.com>
 
+export const UPN_ORDER_GIVEN_FIRST = 'givenFirst'
+export const UPN_ORDER_SURNAME_FIRST = 'surnameFirst'
+
+// Coerce unknown/empty values to the app default (givenFirst).
+export function normalizeUpnOrder(order) {
+    return order === UPN_ORDER_SURNAME_FIRST ? UPN_ORDER_SURNAME_FIRST : UPN_ORDER_GIVEN_FIRST
+}
+
 // Normalize a name part for use in a UPN (umlauts/diacritics -> ascii, strip rest).
 // Must stay identical to normalizeForUPN() in index.js so create & remove build the same UPN.
 export function normalizeForUPN(text) {
@@ -17,20 +25,27 @@ export function normalizeForUPN(text) {
     return s.toLowerCase().replace(/[^a-z0-9.]/g, '')
 }
 
-// Build the UPN exactly as the create flow does: nachname.vorname@domain.
-export function buildUpn(vorname, nachname, domain) {
-    const vn = normalizeForUPN(vorname)
-    const nn = normalizeForUPN(nachname)
-    if (!vn || !nn || !domain) return ''
-    return `${nn}.${vn}@${domain}`
+// Build local-part from normalized given/surname according to order.
+export function buildUpnLocal(vornameNormalized, nachnameNormalized, order = UPN_ORDER_GIVEN_FIRST) {
+    const vn = String(vornameNormalized || '').toLowerCase()
+    const nn = String(nachnameNormalized || '').toLowerCase()
+    if (!vn || !nn) return ''
+    return normalizeUpnOrder(order) === UPN_ORDER_SURNAME_FIRST ? `${nn}.${vn}` : `${vn}.${nn}`
 }
 
-// Match CSV names against loaded users: prefer full UPN@domain, else unique local-part (nachname.vorname).
-export function resolveUpnForEntry(entry, domain, users) {
+// Build the UPN: order selects vorname.nachname vs nachname.vorname before @domain.
+export function buildUpn(vorname, nachname, domain, order = UPN_ORDER_GIVEN_FIRST) {
+    const local = buildUpnLocal(normalizeForUPN(vorname), normalizeForUPN(nachname), order)
+    if (!local || !domain) return ''
+    return `${local}@${domain}`
+}
+
+// Match CSV names against loaded users: prefer full UPN@domain, else unique local-part.
+export function resolveUpnForEntry(entry, domain, users, order = UPN_ORDER_GIVEN_FIRST) {
     const vn = normalizeForUPN(entry?.vorname)
     const nn = normalizeForUPN(entry?.nachname)
     if (!vn || !nn) return { upn: '', count: 0 }
-    const local = `${nn}.${vn}`.toLowerCase()
+    const local = buildUpnLocal(vn, nn, order)
     const built = domain ? `${local}@${String(domain).toLowerCase()}` : ''
     const list = Array.isArray(users) ? users : []
     const byLocal = list.filter((u) => {

@@ -5,7 +5,11 @@
 
 param(
     [Parameter(Mandatory = $false)]
-    [string]$CSVPath = $env:CSV_PATH
+    [string]$CSVPath = $env:CSV_PATH,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('givenFirst','surnameFirst')]
+    [string]$UpnOrder = 'givenFirst'
 )
 
 # Unterdrücke Welcome-Message und Telemetrie
@@ -182,8 +186,12 @@ foreach ($row in $csvData) {
         continue
     }
 
-    # Generiere UserPrincipalName aus bereits normalisierten Werten: nachname.vorname@{tenant-domain}
-    $UPN = "$NachnameNormalized.$VornameNormalized@$tenantDomain"
+    # Build UserPrincipalName from normalized parts; order comes from -UpnOrder (default givenFirst).
+    if ($UpnOrder -eq 'surnameFirst') {
+        $UPN = "$NachnameNormalized.$VornameNormalized@$tenantDomain"
+    } else {
+        $UPN = "$VornameNormalized.$NachnameNormalized@$tenantDomain"
+    }
     
     # Generiere DisplayName: "Nachname Vorname"
     $DisplayName = "$Nachname $Vorname"

@@ -63,7 +63,9 @@ Anna;Schmidt</pre>
                         </div>
                         <div v-else style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
                             Nur <strong>Vorname</strong> + <strong>Familienname</strong> werden verwendet. Der Besitzer-UPN
-                            wird daraus gebildet (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
+                            wird daraus gebildet (Reihenfolge wählbar:
+                            <span style="font-family:monospace;">vorname.nachname</span>
+                            oder <span style="font-family:monospace;">nachname.vorname</span>@{{ domain || 'domain' }})
                             und gegen den Besitzer der geladenen Geräte abgeglichen. Pro Schüler werden <strong>alle</strong>
                             zugeordneten Geräte entfernt: Intune-verwaltete werden abgekoppelt (Retire), reine
                             Entra-Geräte aus dem Verzeichnis gelöscht.
@@ -118,13 +120,16 @@ Anna;Schmidt</pre>
                                 </label>
                             </span>
                         </div>
-                        <button
-                            class="btn btn-danger"
-                            :disabled="!devicesToRemove.length || running"
-                            @click="openConfirm"
-                        >
-                            <i class="bi bi-trash me-1"></i> {{ devicesToRemove.length }} Geräte entfernen
-                        </button>
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <UpnOrderRadios v-if="!deviceMode" name="upn-order-remove-devices" />
+                            <button
+                                class="btn btn-danger"
+                                :disabled="!devicesToRemove.length || running"
+                                @click="openConfirm"
+                            >
+                                <i class="bi bi-trash me-1"></i> {{ devicesToRemove.length }} Geräte entfernen
+                            </button>
+                        </div>
                     </div>
 
                     <div class="table-ms365-hscroll table-ms365-hscroll--y preview-table-scroll">
@@ -293,12 +298,15 @@ Anna;Schmidt</pre>
 import { ref, computed, reactive } from 'vue'
 import { useDevicesStore } from '../stores/devicesStore'
 import { useAuthStore } from '../stores/authStore'
+import { useUpnOrderStore } from '../stores/upnOrderStore'
+import UpnOrderRadios from '../components/UpnOrderRadios.vue'
 import { buildUpn, normalizeForUPN } from '../utils/upn.js'
 import { cancelRunningPs, resetPsCancel } from '../utils/cancelPs'
 import { downloadSampleCsv } from '../utils/downloadFile.js'
 
 const devicesStore = useDevicesStore()
 const authStore = useAuthStore()
+const upnOrderStore = useUpnOrderStore()
 const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
 const sampleDeviceCsvUrl = import.meta.env.BASE_URL + 'device-list.csv'
 
@@ -417,7 +425,7 @@ const deviceRows = computed(() =>
 // Unmatched rows get a fuzzy candidate; confirmed ones adopt the candidate owner's devices.
 const userRows = computed(() =>
     devicesStore.csvEntries.map((entry) => {
-        const upn = buildUpn(entry.vorname, entry.nachname, domain.value)
+        const upn = buildUpn(entry.vorname, entry.nachname, domain.value, upnOrderStore.order)
         const key = rowKey(entry)
         let effectiveUpn = upn
         let devices = upn ? (devicesByOwner.value.get(upn.toLowerCase()) || []) : []

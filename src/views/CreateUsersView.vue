@@ -64,7 +64,8 @@
               </template>
             </PasswordInput>
           </div>
-          <div class="col-12">
+          <div class="col-12 d-flex align-items-center gap-3 flex-wrap">
+            <UpnOrderRadios name="upn-order-single" />
             <button
               class="btn btn-success"
               @click="createSingleUser"
@@ -121,13 +122,14 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
 
         <!-- CSV Preview Table -->
         <div v-if="usersStore.csvEntries.length">
-          <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
             <span style="font-size:0.875rem;font-weight:600;">{{ usersStore.csvEntries.length }} Einträge bereit</span>
-            <div class="d-flex gap-2">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <UpnOrderRadios name="upn-order-csv" />
               <button v-if="usersStore.bulkRunning" class="btn btn-outline-danger" @click="cancelRunningPs">
                 <i class="bi bi-stop-fill"></i> Stoppen
               </button>
-              <button class="btn btn-success" @click="runBulk" :disabled="usersStore.bulkRunning">
+              <button class="btn btn-success" @click="openBulkConfirm" :disabled="usersStore.bulkRunning">
                 <i class="bi" :class="usersStore.bulkRunning ? 'bi-arrow-repeat spin' : 'bi-play-fill'"></i>
                 {{ usersStore.bulkRunning ? 'Läuft...' : 'Benutzer erstellen / aktualisieren' }}
               </button>
@@ -163,7 +165,7 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
                   <td style="color:#8b949e;">{{ i + 1 }}</td>
                   <td><input v-model="entry.vorname" type="text" class="form-control form-control-sm" /></td>
                   <td><input v-model="entry.nachname" type="text" class="form-control form-control-sm" /></td>
-                  <td style="font-family:monospace;font-size:0.72rem;color:#8b949e;">{{ entry.nachnameNormalized }}.{{ entry.vornameNormalized }}</td>
+                  <td style="font-family:monospace;font-size:0.72rem;color:#8b949e;">{{ entryLocalPart(entry) }}</td>
                   <td><input v-model="entry.abteilung" type="text" class="form-control form-control-sm" /></td>
                   <td>
                     <select v-model="entry.userType" class="form-select form-select-sm">
@@ -202,6 +204,55 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
         </div>
       </div>
     </div>
+
+    <!-- Bulk create confirm -->
+    <div v-if="bulkConfirm.show" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-person-plus me-2" style="color:#3fb950;"></i>
+              Benutzer erstellen / aktualisieren
+            </h5>
+            <button type="button" class="btn-close" :disabled="usersStore.bulkRunning" @click="bulkConfirm.show = false"></button>
+          </div>
+          <div class="modal-body" style="font-size:0.875rem;">
+            <p class="mb-2">
+              <strong>{{ usersStore.csvEntries.length }}</strong> Benutzer werden erstellt oder aktualisiert.
+            </p>
+            <div
+              class="alert mb-0 py-2"
+              style="background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.25);color:#e6edf3;font-size:0.83rem;"
+            >
+              <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i>
+              UPN-Schema:
+              <span style="font-family:monospace;color:#58a6ff;">{{ upnOrderLabel }}@{{ authStore.tenantDomain || 'domain' }}</span>
+            </div>
+            <p class="mt-3 mb-0" style="color:#8b949e;font-size:0.82rem;">
+              Bitte bestätigen, dass die UPNs nach diesem Schema gebildet werden sollen.
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              @click="usersStore.bulkRunning ? cancelRunningPs() : (bulkConfirm.show = false)"
+            >
+              {{ usersStore.bulkRunning ? 'Stoppen' : 'Abbrechen' }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-success btn-sm"
+              :disabled="usersStore.bulkRunning"
+              @click="confirmBulkCreate"
+            >
+              <i class="bi" :class="usersStore.bulkRunning ? 'bi-arrow-repeat spin' : 'bi-play-fill'"></i>
+              {{ usersStore.bulkRunning ? 'Läuft...' : 'Bestätigen &amp; starten' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -209,18 +260,26 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
 import { ref, computed, reactive } from 'vue'
 import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
+import { useUpnOrderStore } from '../stores/upnOrderStore'
 import PasswordInput from '../components/PasswordInput.vue'
+import UpnOrderRadios from '../components/UpnOrderRadios.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
-import { normalizeForUPN } from '../utils/upn.js'
+import { buildUpn, buildUpnLocal, normalizeForUPN, UPN_ORDER_SURNAME_FIRST } from '../utils/upn.js'
 import { cancelRunningPs } from '../utils/cancelPs'
 import { downloadSampleCsv } from '../utils/downloadFile.js'
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
+const upnOrderStore = useUpnOrderStore()
 const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
 
 const tab = ref('single')
 const pwValid = computed(() => validatePassword(singleForm.newPassword).valid)
+const bulkConfirm = reactive({ show: false })
+
+const upnOrderLabel = computed(() =>
+  upnOrderStore.order === UPN_ORDER_SURNAME_FIRST ? 'nachname.vorname' : 'vorname.nachname'
+)
 
 const singleForm = reactive({
   vorname: '',
@@ -234,19 +293,22 @@ const singleForm = reactive({
 
 const singlePreview = computed(() => {
   if (!singleForm.vorname || !singleForm.nachname) return { upn: '', displayName: '' }
-  const vn = normalizeForUPN(singleForm.vorname)
-  const nn = normalizeForUPN(singleForm.nachname)
   const domain = authStore.tenantDomain || '?domain'
   return {
-    upn: `${nn}.${vn}@${domain}`,
+    upn: buildUpn(singleForm.vorname, singleForm.nachname, domain, upnOrderStore.order),
     displayName: `${singleForm.nachname} ${singleForm.vorname}`
   }
 })
 
+function entryLocalPart(entry) {
+  return buildUpnLocal(entry?.vornameNormalized, entry?.nachnameNormalized, upnOrderStore.order)
+}
+
 function entryUpn(entry) {
   const domain = authStore.tenantDomain || ''
-  if (!entry?.vornameNormalized || !entry?.nachnameNormalized || !domain) return ''
-  return `${entry.nachnameNormalized}.${entry.vornameNormalized}@${domain}`
+  const local = entryLocalPart(entry)
+  if (!local || !domain) return ''
+  return `${local}@${domain}`
 }
 
 function entryError(entry) {
@@ -272,7 +334,7 @@ async function createSingleUser() {
     forceChange: singleForm.forceChange
   }]
   await usersStore.runBulkCreate()
-  const upn = `${nn}.${vn}@${authStore.tenantDomain || ''}`
+  const upn = buildUpn(singleForm.vorname, singleForm.nachname, authStore.tenantDomain || '', upnOrderStore.order)
   const err = usersStore.failedUserDetails?.[upn]
   if (err) authStore.showToast(err, 'error')
   else {
@@ -305,12 +367,18 @@ function addEmptyRow() {
   })
 }
 
-async function runBulk() {
+function openBulkConfirm() {
+  if (!usersStore.csvEntries.length) return
+  bulkConfirm.show = true
+}
+
+async function confirmBulkCreate() {
   if (!usersStore.csvEntries.length) return
   usersStore.bulkLogs = []
   usersStore.failedUsers = []
   usersStore.failedUserDetails = {}
   await usersStore.runBulkCreate()
+  bulkConfirm.show = false
 }
 </script>
 

@@ -37,7 +37,8 @@ Anna;Schmidt;202</pre>
                             <em>Funktion aus ID setzen</em>).
                             Weitere Zusatzspalten werden ignoriert.
                             Der UPN wird daraus exakt wie beim Erstellen gebildet
-                            (<span style="font-family:monospace;">nachname.vorname@{{ domain || 'domain' }}</span>)
+                            (Reihenfolge wählbar: <span style="font-family:monospace;">vorname.nachname</span>
+                            oder <span style="font-family:monospace;">nachname.vorname</span>@{{ domain || 'domain' }})
                             und gegen die geladene Benutzerliste abgeglichen.
                         </div>
                         <a href="#" @click.prevent="downloadSampleCsv(sampleCsvUrl, 'user-list.csv')" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
@@ -80,7 +81,7 @@ Anna;Schmidt;202</pre>
                             <span v-if="fuzzyRows.length" style="color:#d29922;">· {{ fuzzyRows.length }} fuzzy</span>
                             <span style="color:#8b949e;">· {{ noMatchRows.length }} nicht gefunden</span>
                             <span v-if="ambiguousRows.length" style="color:#d29922;">· {{ ambiguousRows.length }} mehrdeutig</span>
-                            <span class="d-inline-flex align-items-center gap-3 ms-2" style="font-size:0.8rem;">
+                            <span class="d-inline-flex align-items-center gap-3 ms-2 flex-wrap" style="font-size:0.8rem;">
                                 <label class="d-inline-flex align-items-center gap-1 mb-0" style="cursor:pointer;color:#3fb950;">
                                     <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.green" /> gefunden
                                 </label>
@@ -90,8 +91,11 @@ Anna;Schmidt;202</pre>
                                 <label class="d-inline-flex align-items-center gap-1 mb-0" style="cursor:pointer;color:#8b949e;">
                                     <input type="checkbox" class="form-check-input mt-0" style="width:14px;height:14px;flex:none;" v-model="filters.gray" /> nicht gefunden
                                 </label>
+                                <UpnOrderRadios name="upn-order-remove-users" />
                             </span>
                         </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                         <div class="d-flex gap-2 flex-wrap">
                             <button
                                 class="btn btn-outline-secondary btn-sm"
@@ -122,14 +126,14 @@ Anna;Schmidt;202</pre>
                             >
                                 <i class="bi bi-door-open me-1"></i> Büro setzen
                             </button>
-                            <button
-                                class="btn btn-danger btn-sm"
-                                :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning"
-                                @click="openConfirm"
-                            >
-                                <i class="bi bi-trash me-1"></i> {{ matchedRows.length }} Benutzer löschen
-                            </button>
                         </div>
+                        <button
+                            class="btn btn-danger btn-sm"
+                            :disabled="!matchedRows.length || !usersStore.users.length || usersStore.bulkRunning"
+                            @click="openConfirm"
+                        >
+                            <i class="bi bi-trash me-1"></i> {{ matchedRows.length }} Benutzer löschen
+                        </button>
                     </div>
 
                     <div class="table-ms365-hscroll table-ms365-hscroll--y preview-table-scroll">
@@ -389,6 +393,8 @@ import { ref, computed, reactive } from 'vue'
 import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import { useGroupsStore } from '../stores/groupsStore'
+import { useUpnOrderStore } from '../stores/upnOrderStore'
+import UpnOrderRadios from '../components/UpnOrderRadios.vue'
 import { buildUpn, normalizeForUPN, resolveUpnForEntry } from '../utils/upn.js'
 import { cancelRunningPs } from '../utils/cancelPs'
 import { downloadSampleCsv } from '../utils/downloadFile.js'
@@ -396,6 +402,7 @@ import { downloadSampleCsv } from '../utils/downloadFile.js'
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
 const groupsStore = useGroupsStore()
+const upnOrderStore = useUpnOrderStore()
 const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
 
 const confirmWord = 'LÖSCHEN'
@@ -517,10 +524,11 @@ function findCandidate(entry) {
 
 // Reconstruct UPN per CSV row (same logic as create) and classify against the user list.
 const rows = computed(() => {
+    const order = upnOrderStore.order
     const confirmedMatches = usersStore.batchConfirmedMatches
     const built = usersStore.batchEntries.map((entry) => {
-        const resolved = resolveUpnForEntry(entry, domain.value, usersStore.users)
-        const upn = resolved.upn || buildUpn(entry.vorname, entry.nachname, domain.value)
+        const resolved = resolveUpnForEntry(entry, domain.value, usersStore.users, order)
+        const upn = resolved.upn || buildUpn(entry.vorname, entry.nachname, domain.value, order)
         const count = resolved.count || (upn ? (upnCounts.value.get(upn.toLowerCase()) || 0) : 0)
         const key = rowKey(entry)
         let status = count === 1 ? 'matched' : count > 1 ? 'ambiguous' : 'unmatched'

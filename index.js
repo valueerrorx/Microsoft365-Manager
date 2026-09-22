@@ -1252,7 +1252,7 @@ ipcMain.handle('normalize-for-upn', async (_event, text) => normalizeForUPN(text
 
 // ===================== IPC: Bulk Create/Update =====================
 
-ipcMain.handle('run-password-update', async () => {
+ipcMain.handle('run-password-update', async (_event, { upnOrder } = {}) => {
   try {
     if (!csvData?.length) {
       uiSend('pwsh-log', { type: 'error', message: 'FEHLER: Keine CSV-Daten vorhanden. Bitte zuerst Daten hinzufügen.' })
@@ -1260,6 +1260,7 @@ ipcMain.handle('run-password-update', async () => {
       return { status: 'error', message: 'Keine CSV-Daten geladen' }
     }
 
+    const order = upnOrder === 'surnameFirst' ? 'surnameFirst' : 'givenFirst'
     const tmpDir = os.tmpdir()
     const tmpCsv = path.join(tmpDir, `user-passwords-${Date.now()}.csv`)
     await fs.writeFile(tmpCsv, '\uFEFF' + toSemicolonCsv(csvData), 'utf8')
@@ -1276,7 +1277,7 @@ ipcMain.handle('run-password-update', async () => {
     const failedUserDetails = {}
     const env = { ...process.env, POWERSHELL_UPDATECHECK: 'Off', POWERSHELL_TELEMETRY_OPTOUT: '1' }
 
-    const pwsh = spawn(psCmd, buildPsSpawnArgs(scriptPath, ['-CSVPath', tmpCsv]), {
+    const pwsh = spawn(psCmd, buildPsSpawnArgs(scriptPath, ['-CSVPath', tmpCsv, '-UpnOrder', order]), {
       cwd: path.dirname(tmpCsv), env
     })
     trackPsProcess(pwsh)
