@@ -38,6 +38,11 @@ let isQuitting = false
 let deviceLoginBrowserOpened = false
 let deviceLoginCodeEmitted = null
 let graphSessionWarm = false
+// Active tenant domain = the tenant's default verified domain, resolved on connect,
+// or the domain explicitly chosen in the sidebar (then activeDomainPinned stays true).
+// Cached on disk so the sidebar shows it immediately on the next start, before any Graph call.
+let lastKnownTenantDomain = ''
+let activeDomainPinned = false
 let graphAccessToken = null
 let graphTokenExpiresOn = 0
 let graphTokenInflight = null
@@ -227,6 +232,11 @@ async function ensureGraphAccessToken() {
 
 function onGraphResponse(data, source = 'graph') {
   authDebug('graph-response', { source, status: data?.status, message: data?.message })
+  if (data?.tenantDomain) {
+    void persistTenantDomain(data.tenantDomain)
+    // A pinned domain is the app's active domain; don't let a script's tenant default override it.
+    if (activeDomainPinned && lastKnownTenantDomain) data.tenantDomain = lastKnownTenantDomain
+  }
   if (data && (data.status === 'ok' || data.status === 'partial')) {
     graphSessionWarm = true
     authDebug('graph-response:warm', { source, status: data.status })
@@ -584,6 +594,39 @@ async function readMgAuthRecordFromCache() {
     return { account, tenantDomain: tenantDomain || tenantId }
   } catch {
     return null
+  }
+}
+
+function getTenantDomainCachePath() {
+  return path.join(app.getPath('userData'), 'tenant-domain.json')
+}
+
+// Remembers the resolved default domain across app starts (display only; never used for auth).
+async function persistTenantDomain(domain, { pinned = false } = {}) {
+  const d = String(domain || '').trim()
+  if (!d || !d.includes('.')) return
+  // A resolved tenant default must not silently replace a domain the user picked.
+  if (!pinned && activeDomainPinned) return
+  if (d === lastKnownTenantDomain && pinned === activeDomainPinned) return
+  lastKnownTenantDomain = d
+  if (pinned) activeDomainPinned = true
+  try {
+    await fs.writeFile(
+      getTenantDomainCachePath(),
+      JSON.stringify({ tenantDomain: d, pinned: activeDomainPinned }),
+      'utf8'
+    )
+  } catch { /* cache is best-effort */ }
+}
+
+async function readPersistedTenantDomain() {
+  try {
+    const raw = await fs.readFile(getTenantDomainCachePath(), 'utf8')
+    const data = JSON.parse(raw)
+    if (data?.pinned) activeDomainPinned = true
+    return String(data?.tenantDomain || '').trim()
+  } catch {
+    return ''
   }
 }
 
@@ -1252,7 +1295,7 @@ ipcMain.handle('normalize-for-upn', async (_event, text) => normalizeForUPN(text
 
 // ===================== IPC: Bulk Create/Update =====================
 
-ipcMain.handle('run-password-update', async (_event, { upnOrder } = {}) => {
+ipcMain.handle('run-password-update', async (_event, { upnOrder, licenseSkuId } = {}) => {
   try {
     if (!csvData?.length) {
       uiSend('pwsh-log', { type: 'error', message: 'FEHLER: Keine CSV-Daten vorhanden. Bitte zuerst Daten hinzufügen.' })
@@ -1261,6 +1304,8 @@ ipcMain.handle('run-password-update', async (_event, { upnOrder } = {}) => {
     }
 
     const order = upnOrder === 'surnameFirst' ? 'surnameFirst' : 'givenFirst'
+    // Empty = create users without a license.
+    const skuId = /^[0-9a-f-]{36}$/i.test(String(licenseSkuId || '')) ? String(licenseSkuId) : ''
     const tmpDir = os.tmpdir()
     const tmpCsv = path.join(tmpDir, `user-passwords-${Date.now()}.csv`)
     await fs.writeFile(tmpCsv, '\uFEFF' + toSemicolonCsv(csvData), 'utf8')
@@ -1277,7 +1322,7 @@ ipcMain.handle('run-password-update', async (_event, { upnOrder } = {}) => {
     const failedUserDetails = {}
     const env = { ...process.env, POWERSHELL_UPDATECHECK: 'Off', POWERSHELL_TELEMETRY_OPTOUT: '1' }
 
-    const pwsh = spawn(psCmd, buildPsSpawnArgs(scriptPath, ['-CSVPath', tmpCsv, '-UpnOrder', order]), {
+    const pwsh = spawn(psCmd, buildPsSpawnArgs(scriptPath, ['-CSVPath', tmpCsv, '-UpnOrder', order, '-LicenseSkuId', skuId, '-TenantDomain', lastKnownTenantDomain]), {
       cwd: path.dirname(tmpCsv), env
     })
     trackPsProcess(pwsh)
@@ -1348,8 +1393,9 @@ ipcMain.handle('run-password-update', async (_event, { upnOrder } = {}) => {
 ipcMain.handle('graph-connection-status', async () => {
   authDebug('ipc:graph-connection-status')
   try {
+    if (!lastKnownTenantDomain) lastKnownTenantDomain = await readPersistedTenantDomain()
     if (graphSessionWarm) {
-      return { status: 'ok', tenantDomain: 'Microsoft 365' }
+      return { status: 'ok', tenantDomain: lastKnownTenantDomain || 'Microsoft 365' }
     }
     if (USE_ELECTRON_GRAPH_TOKEN) {
       const { tryRestoreGraphSession } = await import('./graph-device-auth.mjs')
@@ -1360,7 +1406,7 @@ ipcMain.handle('graph-connection-status', async () => {
         graphSessionWarm = true
         markGraphSessionReady()
         authLogUi(`Sitzung wiederhergestellt (${restored.tenantDomain || restored.account || 'Microsoft 365'})`, 'success')
-        return { status: 'ok', tenantDomain: restored.tenantDomain, account: restored.account }
+        return { status: 'ok', tenantDomain: lastKnownTenantDomain || restored.tenantDomain, account: restored.account }
       }
       authDebug('start-check:no-electron-session')
       return { status: 'error', message: 'Keine bestehende Anmeldung.' }
@@ -1372,7 +1418,7 @@ ipcMain.handle('graph-connection-status', async () => {
     }
     authDebug('start-check:cache-found', { account: cached.account, tenantDomain: cached.tenantDomain })
     authLogUi(`Sitzung aus Cache (${cached.tenantDomain || cached.account || 'Microsoft 365'})`, 'success')
-    return { status: 'ok', tenantDomain: cached.tenantDomain, account: cached.account }
+    return { status: 'ok', tenantDomain: lastKnownTenantDomain || cached.tenantDomain, account: cached.account }
   } catch (e) {
     authDebug('ipc:graph-connection-status:error', e?.message)
     return { status: 'error', message: e?.message }
@@ -1420,6 +1466,35 @@ ipcMain.handle('get-users', async () => {
   } catch (e) {
     return { status: 'error', message: e?.message }
   }
+})
+
+ipcMain.handle('get-tenant-domains', async () => {
+  try {
+    const result = await runPsScript('scripts/get-tenant-domains.ps1', [], (log) => {
+      uiSend('ps-operation-log', log)
+    })
+    if (result.exitCode === -1 && !result.stdout) {
+      return { status: 'error', message: result.stderr || 'PowerShell konnte nicht gestartet werden', domains: [] }
+    }
+    const data = parseJsonFromOutput(result.stdout)
+    if (!data) {
+      return { status: 'error', message: result.stderr || 'Keine Domaindaten erhalten.', domains: [] }
+    }
+    uiSend('ps-operation-complete', { status: data.status })
+    // Only adopt the tenant default when the user has not pinned a domain.
+    if (data.status === 'ok' && data.defaultDomain) void persistTenantDomain(data.defaultDomain)
+    return onGraphResponse(data, 'get-tenant-domains')
+  } catch (e) {
+    return { status: 'error', message: e?.message, domains: [] }
+  }
+})
+
+// Domain the app builds UPNs with; explicit choice from the sidebar.
+ipcMain.handle('set-active-domain', async (_event, domain) => {
+  const d = String(domain || '').trim().toLowerCase()
+  if (!d || !d.includes('.')) return { status: 'error', message: 'Ungültige Domain' }
+  await persistTenantDomain(d, { pinned: true })
+  return { status: 'ok', tenantDomain: lastKnownTenantDomain }
 })
 
 ipcMain.handle('get-licenses', async () => {

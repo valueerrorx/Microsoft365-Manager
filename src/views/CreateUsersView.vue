@@ -47,10 +47,12 @@
             <input v-model="singleForm.officeLocation" type="text" class="form-control" placeholder="z.B. Raum 101" />
           </div>
           <div class="col-6">
-            <label class="form-label">Benutzertyp</label>
-            <select v-model="singleForm.userType" class="form-select">
-              <option>Schüler</option>
-              <option>Lehrer</option>
+            <label class="form-label">Lizenz</label>
+            <select v-model="singleForm.licenseSkuId" class="form-select">
+              <option value="">Keine Lizenz zuweisen</option>
+              <option v-for="sku in usersStore.licenses" :key="sku.skuId" :value="sku.skuId">
+                {{ licenseOptionLabel(sku) }}
+              </option>
             </select>
           </div>
           <div class="col-12">
@@ -108,11 +110,12 @@
             <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.5rem;">
               <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i> Erwartetes CSV-Format
             </div>
-            <pre style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Familienname;Abteilung;UserType;NewPassword;ForceChange
-Max;Mustermann;3AHIT;Schüler;Passwort123!;1
-Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
+            <pre style="font-family:monospace;font-size:0.78rem;color:#8b949e;margin:0;white-space:pre-wrap;">Vorname;Nachname;Passwort;Abteilung
+Max;Mustermann;Passwort123!;3AHIT
+Anna;Schmidt;Passwort456!;LehrerInnenzimmer</pre>
             <div style="font-size:0.78rem;color:#8b949e;margin-top:0.5rem;">
               Trennzeichen: Semikolon oder Komma. Encoding: UTF-8 oder Windows-1252 (Excel).
+              UPN-Schema, Benutzertyp und Passwortwechsel werden beim Erstellen abgefragt.
             </div>
             <a href="#" @click.prevent="downloadSampleCsv(sampleCsvUrl, 'user-list.csv')" style="display:inline-block;font-size:0.78rem;margin-top:0.5rem;color:#58a6ff;">
               <i class="bi bi-download me-1"></i> Beispiel-CSV herunterladen
@@ -125,7 +128,6 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
           <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
             <span style="font-size:0.875rem;font-weight:600;">{{ usersStore.csvEntries.length }} Einträge bereit</span>
             <div class="d-flex align-items-center gap-3 flex-wrap">
-              <UpnOrderRadios name="upn-order-csv" />
               <button v-if="usersStore.bulkRunning" class="btn btn-outline-danger" @click="cancelRunningPs">
                 <i class="bi bi-stop-fill"></i> Stoppen
               </button>
@@ -144,11 +146,9 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
                   <th>#</th>
                   <th>Vorname</th>
                   <th>Nachname</th>
-                  <th>UPN Vorschau</th>
                   <th>Abteilung</th>
-                  <th>Typ</th>
                   <th>Passwort</th>
-                  <th>PW ändern</th>
+                  <th>UPN Vorschau</th>
                   <th></th>
                 </tr>
               </thead>
@@ -165,18 +165,9 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
                   <td style="color:#8b949e;">{{ i + 1 }}</td>
                   <td><input v-model="entry.vorname" type="text" class="form-control form-control-sm" /></td>
                   <td><input v-model="entry.nachname" type="text" class="form-control form-control-sm" /></td>
-                  <td style="font-family:monospace;font-size:0.72rem;color:#8b949e;">{{ entryLocalPart(entry) }}</td>
                   <td><input v-model="entry.abteilung" type="text" class="form-control form-control-sm" /></td>
-                  <td>
-                    <select v-model="entry.userType" class="form-select form-select-sm">
-                      <option>Schüler</option>
-                      <option>Lehrer</option>
-                    </select>
-                  </td>
                   <td><input v-model="entry.newPassword" type="text" class="form-control form-control-sm" /></td>
-                  <td class="text-center">
-                    <input type="checkbox" class="form-check-input" style="width:16px !important;height:16px !important;min-width:16px;display:inline-block;flex:none;float:none;" v-model="entry.forceChange" />
-                  </td>
+                  <td style="font-family:monospace;font-size:0.72rem;color:#8b949e;">{{ entryLocalPart(entry) }}</td>
                   <td>
                     <button class="btn-action danger" @click="usersStore.csvEntries.splice(i, 1)">
                       <i class="bi bi-trash"></i>
@@ -217,20 +208,57 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
             <button type="button" class="btn-close" :disabled="usersStore.bulkRunning" @click="bulkConfirm.show = false"></button>
           </div>
           <div class="modal-body" style="font-size:0.875rem;">
-            <p class="mb-2">
+            <p class="mb-3">
               <strong>{{ usersStore.csvEntries.length }}</strong> Benutzer werden erstellt oder aktualisiert.
             </p>
+
+            <div class="mb-3">
+              <div style="font-size:0.8rem;color:#8b949e;margin-bottom:0.35rem;">UPN-Schema</div>
+              <UpnOrderRadios name="upn-order-confirm" />
+            </div>
+
+            <div class="mb-3">
+              <div class="d-flex align-items-center justify-content-between" style="font-size:0.8rem;color:#8b949e;margin-bottom:0.35rem;">
+                <span>Lizenz</span>
+                <button
+                  class="btn btn-link p-0"
+                  style="font-size:0.78rem;text-decoration:none;"
+                  :disabled="usersStore.licensesLoading"
+                  @click="usersStore.fetchLicenses()"
+                >
+                  <i class="bi" :class="usersStore.licensesLoading ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'"></i>
+                  Aktualisieren
+                </button>
+              </div>
+              <select v-model="bulkConfirm.licenseSkuId" class="form-select form-select-sm">
+                <option value="">Keine Lizenz zuweisen</option>
+                <option v-for="sku in usersStore.licenses" :key="sku.skuId" :value="sku.skuId">
+                  {{ licenseOptionLabel(sku) }}
+                </option>
+              </select>
+              <div v-if="!usersStore.licenses.length" style="font-size:0.78rem;color:#8b949e;margin-top:0.25rem;">
+                Keine Lizenzen geladen.
+              </div>
+              <div v-else-if="selectedLicenseShort" style="font-size:0.78rem;color:#f0883e;margin-top:0.25rem;">
+                Nur noch {{ selectedLicenseFree }} freie Lizenzen für {{ usersStore.csvEntries.length }} Benutzer.
+              </div>
+            </div>
+
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" v-model="bulkConfirm.forceChange" id="bulkForce" />
+              <label class="form-check-label" for="bulkForce" style="font-size:0.83rem;">Passwort bei nächster Anmeldung ändern</label>
+            </div>
+
             <div
               class="alert mb-0 py-2"
               style="background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.25);color:#e6edf3;font-size:0.83rem;"
             >
               <i class="bi bi-info-circle me-1" style="color:#58a6ff;"></i>
-              UPN-Schema:
               <span style="font-family:monospace;color:#58a6ff;">{{ upnOrderLabel }}@{{ authStore.tenantDomain || 'domain' }}</span>
+              <div v-if="confirmUpnSample" style="font-family:monospace;color:#8b949e;font-size:0.78rem;margin-top:0.25rem;">
+                z.B. {{ confirmUpnSample }}
+              </div>
             </div>
-            <p class="mt-3 mb-0" style="color:#8b949e;font-size:0.82rem;">
-              Bitte bestätigen, dass die UPNs nach diesem Schema gebildet werden sollen.
-            </p>
           </div>
           <div class="modal-footer">
             <button
@@ -257,7 +285,7 @@ Anna;Schmidt;LehrerInnenzimmer;Lehrer;Passwort456!;0</pre>
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useUsersStore } from '../stores/usersStore'
 import { useAuthStore } from '../stores/authStore'
 import { useUpnOrderStore } from '../stores/upnOrderStore'
@@ -265,6 +293,7 @@ import PasswordInput from '../components/PasswordInput.vue'
 import UpnOrderRadios from '../components/UpnOrderRadios.vue'
 import { validatePassword } from '../utils/passwordValidator.js'
 import { buildUpn, buildUpnLocal, normalizeForUPN, UPN_ORDER_SURNAME_FIRST } from '../utils/upn.js'
+import { humanLicenseLabel } from '../utils/licenseLabel.js'
 import { cancelRunningPs } from '../utils/cancelPs'
 import { downloadSampleCsv } from '../utils/downloadFile.js'
 
@@ -275,10 +304,31 @@ const sampleCsvUrl = import.meta.env.BASE_URL + 'user-list.csv'
 
 const tab = ref('single')
 const pwValid = computed(() => validatePassword(singleForm.newPassword).valid)
-const bulkConfirm = reactive({ show: false })
+const bulkConfirm = reactive({ show: false, licenseSkuId: '', forceChange: true })
 
 const upnOrderLabel = computed(() =>
   upnOrderStore.order === UPN_ORDER_SURNAME_FIRST ? 'nachname.vorname' : 'vorname.nachname'
+)
+
+// First entry rendered with the currently selected order, as a live example in the confirm dialog.
+const confirmUpnSample = computed(() => entryUpn(usersStore.csvEntries[0]))
+
+// Free units of a SKU = prepaid (enabled) minus already consumed.
+function licenseFreeUnits(sku) {
+  const enabled = Number(sku?.prepaidUnits?.enabled) || 0
+  return enabled - (Number(sku?.consumedUnits) || 0)
+}
+
+function licenseOptionLabel(sku) {
+  return `${humanLicenseLabel(sku?.skuPartNumber)} — ${licenseFreeUnits(sku)} frei (${sku?.skuPartNumber})`
+}
+
+const selectedLicense = computed(() =>
+  usersStore.licenses.find((s) => s.skuId === bulkConfirm.licenseSkuId) || null
+)
+const selectedLicenseFree = computed(() => (selectedLicense.value ? licenseFreeUnits(selectedLicense.value) : 0))
+const selectedLicenseShort = computed(
+  () => !!selectedLicense.value && selectedLicenseFree.value < usersStore.csvEntries.length
 )
 
 const singleForm = reactive({
@@ -286,7 +336,7 @@ const singleForm = reactive({
   nachname: '',
   abteilung: '',
   officeLocation: '',
-  userType: 'Schüler',
+  licenseSkuId: '',
   newPassword: '',
   forceChange: true
 })
@@ -329,11 +379,10 @@ async function createSingleUser() {
     nachnameNormalized: nn,
     abteilung: singleForm.abteilung,
     officeLocation: singleForm.officeLocation,
-    userType: singleForm.userType,
     newPassword: singleForm.newPassword,
     forceChange: singleForm.forceChange
   }]
-  await usersStore.runBulkCreate()
+  await usersStore.runBulkCreate(singleForm.licenseSkuId)
   const upn = buildUpn(singleForm.vorname, singleForm.nachname, authStore.tenantDomain || '', upnOrderStore.order)
   const err = usersStore.failedUserDetails?.[upn]
   if (err) authStore.showToast(err, 'error')
@@ -350,6 +399,12 @@ async function createSingleUser() {
 
 async function importCsv() {
   await usersStore.importCsv()
+  // Only Vorname/Nachname/Passwort/Abteilung are taken from the CSV; type and
+  // password-change policy are set globally in the confirm dialog.
+  for (const entry of usersStore.csvEntries) {
+    delete entry.userType
+    delete entry.forceChange
+  }
   if (usersStore.csvEntries.length) tab.value = 'csv'
 }
 
@@ -361,23 +416,30 @@ function addEmptyRow() {
     nachnameNormalized: '',
     abteilung: '',
     officeLocation: '',
-    userType: 'Schüler',
-    newPassword: '',
-    forceChange: true
+    newPassword: ''
   })
 }
 
-function openBulkConfirm() {
+async function openBulkConfirm() {
   if (!usersStore.csvEntries.length) return
   bulkConfirm.show = true
+  if (!usersStore.licenses.length) await usersStore.fetchLicenses()
 }
+
+onMounted(() => {
+  if (!usersStore.licenses.length) usersStore.fetchLicenses()
+})
 
 async function confirmBulkCreate() {
   if (!usersStore.csvEntries.length) return
+  // Password-change policy is chosen once in this dialog and applied to every row.
+  for (const entry of usersStore.csvEntries) {
+    entry.forceChange = bulkConfirm.forceChange
+  }
   usersStore.bulkLogs = []
   usersStore.failedUsers = []
   usersStore.failedUserDetails = {}
-  await usersStore.runBulkCreate()
+  await usersStore.runBulkCreate(bulkConfirm.licenseSkuId)
   bulkConfirm.show = false
 }
 </script>

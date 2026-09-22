@@ -84,16 +84,27 @@
     <!-- Connection + version (pinned bottom) -->
     <div class="sidebar-footer mt-auto">
       <div style="padding:0.75rem 1rem;border-top:1px solid var(--sidebar-border);">
-        <div class="d-flex align-items-center gap-2 mb-2" :class="{ 'justify-content-center': isCollapsed }">
+        <button
+          type="button"
+          class="sidebar-domain-btn d-flex align-items-center gap-2 mb-2"
+          :class="{ 'justify-content-center': isCollapsed }"
+          :disabled="!authStore.connected"
+          :title="authStore.connected ? `Aktive Domain: ${authStore.tenantDomain} — klicken zum Wechseln` : 'Nicht verbunden'"
+          @click="openDomainPicker"
+        >
           <div
             class="conn-dot"
             :class="authStore.connected ? 'connected' : 'disconnected'"
-            :title="authStore.connected ? authStore.tenantDomain : 'Nicht verbunden'"
           ></div>
           <span class="sidebar-footer-detail" style="font-size:0.78rem;color:var(--text-secondary);">
             {{ authStore.connected ? authStore.tenantDomain : 'Nicht verbunden' }}
           </span>
-        </div>
+          <i
+            v-if="authStore.connected && !isCollapsed"
+            class="bi bi-chevron-expand sidebar-footer-detail"
+            style="font-size:0.7rem;color:var(--text-secondary);margin-left:auto;"
+          ></i>
+        </button>
         <div v-if="usersStore.lastFetched" class="sidebar-footer-detail" style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:0.4rem;">
           Zuletzt: {{ formatTime(usersStore.lastFetched) }}
         </div>
@@ -120,6 +131,64 @@
       >
         v{{ appVersion }}
       </button>
+    </div>
+
+    <div
+      v-if="domainModalOpen"
+      class="modal d-block about-modal-backdrop"
+      tabindex="-1"
+      @click.self="domainModalOpen = false"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content about-modal-content">
+          <div class="modal-header" style="border-bottom:1px solid var(--sidebar-border);">
+            <h5 class="modal-title" style="font-size:1rem;">
+              <i class="bi bi-globe2 me-2" style="color:#58a6ff;"></i> Aktive Domain
+            </h5>
+            <button type="button" class="btn-close btn-close-white" @click="domainModalOpen = false"></button>
+          </div>
+          <div class="modal-body">
+            <p style="font-size:0.82rem;color:var(--text-secondary);">
+              Neue Benutzer werden mit dieser Domain angelegt.
+            </p>
+            <div v-if="authStore.domainsLoading" style="font-size:0.85rem;color:var(--text-secondary);">
+              <i class="bi bi-arrow-repeat spin me-1"></i> Domains werden geladen…
+            </div>
+            <div v-else-if="!authStore.tenantDomains.length" style="font-size:0.85rem;color:var(--text-secondary);">
+              Keine Domains geladen.
+            </div>
+            <div v-else class="d-flex flex-column gap-1">
+              <button
+                v-for="d in authStore.tenantDomains"
+                :key="d.name"
+                type="button"
+                class="domain-option d-flex align-items-center gap-2"
+                :class="{ active: d.name === authStore.tenantDomain }"
+                @click="chooseDomain(d.name)"
+              >
+                <i
+                  class="bi"
+                  :class="d.name === authStore.tenantDomain ? 'bi-check-circle-fill' : 'bi-circle'"
+                  :style="{ color: d.name === authStore.tenantDomain ? '#3fb950' : '#8b949e' }"
+                ></i>
+                <span style="font-family:monospace;font-size:0.82rem;">{{ d.name }}</span>
+                <span v-if="d.isDefault" class="domain-badge">Standard</span>
+                <span v-if="d.isInitial" class="domain-badge">onmicrosoft</span>
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer" style="border-top:1px solid var(--sidebar-border);">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              :disabled="authStore.domainsLoading"
+              @click="authStore.fetchTenantDomains()"
+            >
+              <i class="bi bi-arrow-clockwise me-1"></i> Aktualisieren
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div
@@ -162,6 +231,7 @@ const appVersion = pkg.version
 const appVersionFull = `Version ${pkg.version}`
 const xapientUrl = 'https://xapient.solutions/'
 const aboutModalOpen = ref(false)
+const domainModalOpen = ref(false)
 const isCollapsed = ref(false)
 
 // Toggle sidebar width and persist preference in localStorage.
@@ -192,6 +262,22 @@ const canLogout = computed(
     !!devicesStore.lastFetched ||
     !!rolesStore.lastFetched
 )
+
+// Opens the domain picker; loads the tenant's verified domains on first use.
+async function openDomainPicker() {
+  if (!authStore.connected) return
+  domainModalOpen.value = true
+  if (!authStore.tenantDomains.length) await authStore.fetchTenantDomains()
+}
+
+async function chooseDomain(name) {
+  if (name === authStore.tenantDomain) {
+    domainModalOpen.value = false
+    return
+  }
+  const ok = await authStore.setActiveDomain(name)
+  if (ok) domainModalOpen.value = false
+}
 
 function formatTime(date) {
   return date.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })
@@ -285,6 +371,50 @@ async function openXapientSite() {
   color: #8b949e;
   background: rgba(255, 255, 255, 0.04);
 }
+
+.sidebar-domain-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+}
+
+.sidebar-domain-btn:hover:not(:disabled) .sidebar-footer-detail {
+  color: var(--text-primary) !important;
+}
+
+.sidebar-domain-btn:disabled {
+  cursor: default;
+}
+
+.domain-option {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.domain-option:hover {
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.domain-option.active {
+  border-color: rgba(63, 185, 80, 0.5);
+}
+
+.domain-badge {
+  font-size: 0.68rem;
+  color: #8b949e;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 10px;
+  padding: 0 0.45rem;
+}
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .about-modal-backdrop {
   background: rgba(0, 0, 0, 0.6);

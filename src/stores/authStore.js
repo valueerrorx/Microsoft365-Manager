@@ -8,6 +8,9 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     connected: false,
     tenantDomain: null,
+    // All verified domains of the tenant; source for the sidebar domain picker.
+    tenantDomains: [],
+    domainsLoading: false,
     tenantOnPremisesSync: false,
     syncedUserCount: 0,
     connecting: false,
@@ -63,9 +66,43 @@ export const useAuthStore = defineStore('auth', {
     setConnected(domain) {
       this.connected = true
       this.connecting = false
-      this.tenantDomain = domain
+      // 'Microsoft 365' is the placeholder for "connected, domain unknown" — never let it
+      // overwrite a real domain we already resolved.
+      const placeholder = !domain || domain === 'Microsoft 365'
+      if (!(placeholder && this.tenantDomain)) this.tenantDomain = domain
       this.error = null
       this.deviceLoginCode = null
+    },
+
+    async fetchTenantDomains() {
+      this.domainsLoading = true
+      try {
+        const result = await window.ipcRenderer.invoke('get-tenant-domains')
+        if (result.status === 'ok') {
+          this.tenantDomains = result.domains || []
+          return true
+        }
+        this.addLog({ type: 'error', message: `Domains: ${result.message}` })
+        return false
+      } catch (e) {
+        this.addLog({ type: 'error', message: e.message })
+        return false
+      } finally {
+        this.domainsLoading = false
+      }
+    },
+
+    // Switches the domain all UPN building/matching uses; persisted in the main process.
+    async setActiveDomain(domain) {
+      const result = await window.ipcRenderer.invoke('set-active-domain', domain)
+      if (result?.status === 'ok') {
+        this.tenantDomain = result.tenantDomain
+        this.addLog({ type: 'success', message: `Aktive Domain: ${result.tenantDomain}` })
+        this.showToast(`Aktive Domain: ${result.tenantDomain}`, 'success')
+        return true
+      }
+      this.showToast(result?.message || 'Domain konnte nicht gesetzt werden', 'error')
+      return false
     },
 
     // Tenant-level AD Connect flag from first Graph user list load.

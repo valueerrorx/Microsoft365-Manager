@@ -525,7 +525,7 @@ export const useUsersStore = defineStore('users', {
       }
     },
 
-    async runBulkCreate() {
+    async runBulkCreate(licenseSkuId = '') {
       const auth = useAuthStore()
       const upnOrder = useUpnOrderStore().order
       this.bulkRunning = true
@@ -550,7 +550,7 @@ export const useUsersStore = defineStore('users', {
       auth.addLog({ type: 'info', message: `${syncResult.count} Einträge übertragen, PowerShell läuft...` })
 
       try {
-        const result = await window.ipcRenderer.invoke('run-password-update', { upnOrder })
+        const result = await window.ipcRenderer.invoke('run-password-update', { upnOrder, licenseSkuId })
         this.failedUsers = result.failedUsers || []
         this.failedUserDetails = result.failedUserDetails || {}
         if (result.status === 'ok') {

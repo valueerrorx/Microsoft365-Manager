@@ -9,7 +9,15 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateSet('givenFirst','surnameFirst')]
-    [string]$UpnOrder = 'givenFirst'
+    [string]$UpnOrder = 'givenFirst',
+
+    # SKU der Lizenz, die neuen Benutzern zugewiesen wird (leer = keine Lizenz).
+    [Parameter(Mandatory = $false)]
+    [string]$LicenseSkuId = '',
+
+    # Aktive Domain aus der UI; leer = Default-Domain des Tenants ermitteln.
+    [Parameter(Mandatory = $false)]
+    [string]$TenantDomain = ''
 )
 
 # Unterdrücke Welcome-Message und Telemetrie
@@ -42,67 +50,31 @@ Ensure-Mg365GraphModule -Name 'Microsoft.Graph.Identity.DirectoryManagement'
 . (Join-Path $__ms365ConnRoot 'Connect-Mg365App.ps1')
 Connect-Mg365App
 
-# Ermittle Tenant-Domain
+# Tenant-Domain: bevorzugt die in der UI angezeigte aktive Domain, damit UPN-Vorschau
+# und tatsaechlich angelegter UPN nicht auseinanderlaufen.
+$tenantDomain = $TenantDomain.Trim()
+if ($tenantDomain) {
+    Write-Host "Tenant-Domain aus UI: $tenantDomain" -ForegroundColor Cyan
+}
 try {
-    $org = Get-MgOrganization -Top 1
-    $tenantDomain = $org.VerifiedDomains | Where-Object { $_.IsDefault -eq $true } | Select-Object -ExpandProperty Name
     if (-not $tenantDomain) {
-        $tenantDomain = $org.VerifiedDomains[0].Name
+        $org = Get-MgOrganization -Top 1
+        $tenantDomain = $org.VerifiedDomains | Where-Object { $_.IsDefault -eq $true } | Select-Object -ExpandProperty Name
+        if (-not $tenantDomain) {
+            $tenantDomain = $org.VerifiedDomains[0].Name
+        }
+        Write-Host "Tenant-Domain ermittelt: $tenantDomain" -ForegroundColor Cyan
     }
-    Write-Host "Tenant-Domain ermittelt: $tenantDomain" -ForegroundColor Cyan
 } catch {
     Write-Error "Konnte Tenant-Domain nicht ermitteln: $($_.Exception.Message)"
     return
 }
 
-# Ermittle verfügbare A3-Lizenzen
-$studentLicenseSkuId = $null
-$teacherLicenseSkuId = $null
-
-try {
-    $subscribedSkus = Get-MgSubscribedSku
-    # Lizenzen werden intern gespeichert, aber nicht in Logs ausgegeben
-    foreach ($sku in $subscribedSkus) {
-        $skuPartNumber = $sku.SkuPartNumber
-        $consumedUnits = $sku.ConsumedUnits
-        $prepaidUnits = $sku.PrepaidUnits
-        
-        # Suche nach Schüler-Lizenz - verschiedene mögliche Namen
-        # Typische Namen: M365EDU_A3_STUDENTUSEQTY, M365EDU_A3_STU, etc.
-        if ($studentLicenseSkuId -eq $null) {
-            if ($skuPartNumber -like "*A3*STUDENT*" -or 
-                $skuPartNumber -eq "M365EDU_A3_STUDENTUSEQTY" -or
-                $skuPartNumber -like "*A3_STUDENT*" -or
-                $skuPartNumber -like "*STUDENT*A3*" -or
-                ($skuPartNumber -like "*A3*" -and $skuPartNumber -like "*STU*" -and $skuPartNumber -notlike "*FACULTY*")) {
-                $studentLicenseSkuId = $sku.SkuId
-                Write-Host "Schüler-Lizenz gefunden: $skuPartNumber" -ForegroundColor Green
-            }
-        }
-        
-        # Suche nach Lehrer-Lizenz - verschiedene mögliche Namen
-        # Typische Namen: M365EDU_A3_FACULTYUSEQTY, M365EDU_A3_FAC, etc.
-        if ($teacherLicenseSkuId -eq $null) {
-            if ($skuPartNumber -like "*A3*FACULTY*" -or 
-                $skuPartNumber -eq "M365EDU_A3_FACULTYUSEQTY" -or
-                $skuPartNumber -like "*A3_FACULTY*" -or
-                $skuPartNumber -like "*FACULTY*A3*" -or
-                ($skuPartNumber -like "*A3*" -and $skuPartNumber -like "*FAC*" -and $skuPartNumber -notlike "*STUDENT*")) {
-                $teacherLicenseSkuId = $sku.SkuId
-                Write-Host "Lehrer-Lizenz gefunden: $skuPartNumber" -ForegroundColor Green
-            }
-        }
-    }
-    
-    if ($null -eq $studentLicenseSkuId) {
-        Write-Host "Warnung: Keine Schüler-Lizenz gefunden! Bitte prüfe die SKU-PartNumbers oben." -ForegroundColor Yellow
-    }
-    if ($null -eq $teacherLicenseSkuId) {
-        Write-Host "Warnung: Keine Lehrer-Lizenz gefunden! Bitte prüfe die SKU-PartNumbers oben." -ForegroundColor Yellow
-    }
-} catch {
-    Write-Host "Warnung: Konnte Lizenzen nicht abrufen. Lizenzzuweisung wird möglicherweise fehlschlagen." -ForegroundColor Yellow
-    Write-Host "Fehler: $($_.Exception.Message)" -ForegroundColor Red
+# Lizenz kommt aus der UI-Auswahl (-LicenseSkuId); leer = keine Lizenzzuweisung.
+$licenseSkuId = $LicenseSkuId.Trim()
+if ([string]::IsNullOrWhiteSpace($licenseSkuId)) {
+    $licenseSkuId = $null
+    Write-Host "Keine Lizenz ausgewaehlt - Benutzer werden ohne Lizenz angelegt." -ForegroundColor Yellow
 }
 
 # Funktion: Normalisiere String für UPN (lowercase, alle Sonderzeichen ersetzen)
@@ -154,7 +126,6 @@ foreach ($row in $csvData) {
     $OfficeLocation = "$($row.'Büro')".Trim()
     if ([string]::IsNullOrWhiteSpace($OfficeLocation)) { $OfficeLocation = "$($row.Buero)".Trim() }
     if ([string]::IsNullOrWhiteSpace($OfficeLocation)) { $OfficeLocation = "$($row.OfficeLocation)".Trim() }
-    $UserType = "$($row.UserType)".Trim()
     $Password = "$($row.NewPassword)".Trim()
     
     # Verwende bereits normalisierte Werte aus CSV, falls vorhanden
@@ -169,12 +140,7 @@ foreach ($row in $csvData) {
         $NachnameNormalized = Normalize-ForUPN $Nachname
     }
     
-    # UserType Default = "Schüler"
-    if ([string]::IsNullOrWhiteSpace($UserType)) {
-        $UserType = "Schüler"
-    }
-
-    $RawValue = "$($_.ForceChange)".Trim()
+    $RawValue = "$($row.ForceChange)".Trim()
     $ForceChange = switch ($RawValue) {
         "1" { $true }
         default { $false }
@@ -251,20 +217,13 @@ foreach ($row in $csvData) {
                 # Kurze Pause, damit der Benutzer vollständig im System erstellt wird
                 Start-Sleep -Seconds 2
 
-                # Lizenz zuweisen
-                $licenseSkuId = $null
-                if ($UserType -eq "Lehrer" -or $UserType -eq "Teacher") {
-                    $licenseSkuId = $teacherLicenseSkuId
-                } else {
-                    $licenseSkuId = $studentLicenseSkuId
-                }
-
+                # Lizenz zuweisen (SKU aus der UI-Auswahl)
                 if ($null -ne $licenseSkuId) {
                     try {
                         # Versuche zuerst Set-MgUserLicense (falls verfügbar)
                         if (Get-Command Set-MgUserLicense -ErrorAction SilentlyContinue) {
                             Set-MgUserLicense -UserId $UPN -AddLicenses @(@{SkuId = $licenseSkuId}) -RemoveLicenses @()
-                            Write-Host "Lizenz zugewiesen ($UserType): $licenseSkuId" -ForegroundColor Green
+                            Write-Host "Lizenz zugewiesen: $licenseSkuId" -ForegroundColor Green
                         } else {
                             # Fallback: Direkte REST API
                             $body = @{
@@ -279,7 +238,7 @@ foreach ($row in $csvData) {
                             
                             $uri = "https://graph.microsoft.com/v1.0/users/$($newUser.Id)/assignLicense"
                             $response = Invoke-MgGraphRequest -Method POST -Uri $uri -Body $jsonBody -ContentType "application/json" -ErrorAction Stop
-                            Write-Host "Lizenz zugewiesen ($UserType): $licenseSkuId" -ForegroundColor Green
+                            Write-Host "Lizenz zugewiesen: $licenseSkuId" -ForegroundColor Green
                         }
                     } catch {
                         $errorMessage = $_.Exception.Message
@@ -310,7 +269,7 @@ foreach ($row in $csvData) {
                         continue
                     }
                 } else {
-                    Write-Host "Warnung: Keine passende Lizenz gefunden für UserType: $UserType" -ForegroundColor Yellow
+                    Write-Host "Keine Lizenz zugewiesen (keine ausgewaehlt)." -ForegroundColor Yellow
                 }
             } else {
                 Write-Host "FEHLER: Benutzer konnte nicht erstellt werden (keine Antwort von API)" -ForegroundColor Red

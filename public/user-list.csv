@@ -1,4 +1,3 @@
-Vorname,Nachname,Abteilung,UserType,NewPassword,ForceChange
-demomité,test1,2025,Schüler,#Europa123,0
-demomitü,test2,2025,Schüler,#Europa123,0
-demomitâ,test3,2025,Schüler,#Europa123,0
+Vorname;Nachname;Passwort;Abteilung
+Max;Mustermann;#Europa123;3AHIT
+Anna;Schmidt;#Europa123;LehrerInnenzimmer
