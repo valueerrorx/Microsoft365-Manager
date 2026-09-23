@@ -1320,7 +1320,28 @@ ipcMain.handle('run-password-update', async (_event, { upnOrder, licenseSkuId } 
     const psCmd = detectPowerShell()
     const failedUsers = new Set()
     const failedUserDetails = {}
-    const env = { ...process.env, POWERSHELL_UPDATECHECK: 'Off', POWERSHELL_TELEMETRY_OPTOUT: '1' }
+
+    // Same auth env as runPsScript: on Windows pwsh must reuse Electron's token —
+    // without it Connect-MgGraph falls back to InteractiveBrowserCredential, which
+    // fails in a child process ("a window handle must be configured").
+    let bulkAccessToken = null
+    if (USE_ELECTRON_GRAPH_TOKEN) {
+      try {
+        bulkAccessToken = await ensureGraphAccessToken()
+      } catch (e) {
+        authLogUi(`Anmeldung fehlgeschlagen: ${e?.message}`, 'error')
+        uiSend('pwsh-complete', { status: 'error', message: e?.message, failedUsers: [], failedUserDetails: {} })
+        return { status: 'error', message: e?.message || 'Graph-Anmeldung fehlgeschlagen' }
+      }
+    }
+    const env = {
+      ...process.env,
+      POWERSHELL_UPDATECHECK: 'Off',
+      POWERSHELL_TELEMETRY_OPTOUT: '1',
+      ...(process.platform === 'win32' ? { MS365_ELECTRON_APP: '1' } : {}),
+      ...(graphSessionWarm ? { MS365_GRAPH_SESSION_WARM: '1' } : {}),
+      ...(bulkAccessToken ? { MS365_GRAPH_ACCESS_TOKEN: bulkAccessToken } : {})
+    }
 
     const pwsh = spawn(psCmd, buildPsSpawnArgs(scriptPath, ['-CSVPath', tmpCsv, '-UpnOrder', order, '-LicenseSkuId', skuId, '-TenantDomain', lastKnownTenantDomain]), {
       cwd: path.dirname(tmpCsv), env
