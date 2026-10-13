@@ -46,7 +46,8 @@ let activeDomainPinned = false
 let graphAccessToken = null
 let graphTokenExpiresOn = 0
 let graphTokenInflight = null
-const USE_ELECTRON_GRAPH_TOKEN = process.platform === 'win32'
+// One Graph token in the Electron process; each pwsh child reuses it instead of opening its own browser.
+const USE_ELECTRON_GRAPH_TOKEN = true
 let pendingDeviceLoginCode = null
 let csvData = []
 // Device-name CSV for the device-removal view; kept separate from csvData so the
@@ -1321,9 +1322,8 @@ ipcMain.handle('run-password-update', async (_event, { upnOrder, licenseSkuId } 
     const failedUsers = new Set()
     const failedUserDetails = {}
 
-    // Same auth env as runPsScript: on Windows pwsh must reuse Electron's token —
-    // without it Connect-MgGraph falls back to InteractiveBrowserCredential, which
-    // fails in a child process ("a window handle must be configured").
+    // Same auth env as runPsScript: pwsh must reuse Electron's token.
+    // A fresh Connect-MgGraph in each child opens another browser login.
     let bulkAccessToken = null
     if (USE_ELECTRON_GRAPH_TOKEN) {
       try {

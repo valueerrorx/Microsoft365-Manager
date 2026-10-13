@@ -38,6 +38,7 @@ const TOKEN_CACHE_NAME = 'ms365-manager'
 let persistenceRegistered = false
 let storageDir = null
 let graphCredential = null
+let useDiskCache = true
 
 function scopeUrls() {
     return GRAPH_DELEGATED_SCOPES.map((s) => `https://graph.microsoft.com/${s}`)
@@ -83,13 +84,32 @@ async function saveAuthRecord(record) {
     await fs.writeFile(filePath, serializeAuthenticationRecord(record), 'utf8')
 }
 
+function isKeyringError(err) {
+    return /keyring|libsecret|Keychain/i.test(String(err?.message || err))
+}
+
 function buildCredential(authenticationRecord) {
     registerPersistence()
     return new InteractiveBrowserCredential({
         clientId: GRAPH_PS_CLIENT_ID,
-        tokenCachePersistenceOptions: { enabled: true, name: TOKEN_CACHE_NAME },
+        ...(useDiskCache
+            ? { tokenCachePersistenceOptions: { enabled: true, name: TOKEN_CACHE_NAME } }
+            : {}),
         ...(authenticationRecord ? { authenticationRecord } : {})
     })
+}
+
+// Keyring missing: drop disk cache and keep the token in this Electron process.
+async function callCredential(authenticationRecord, fn) {
+    graphCredential = buildCredential(authenticationRecord)
+    try {
+        return await fn(graphCredential)
+    } catch (err) {
+        if (!useDiskCache || !isKeyringError(err)) throw err
+        useDiskCache = false
+        graphCredential = buildCredential(authenticationRecord)
+        return fn(graphCredential)
+    }
 }
 
 // Drops cached MSAL credential after sign-out.
@@ -113,9 +133,8 @@ export async function tryRestoreGraphSession() {
     const record = await loadAuthRecord()
     if (!record) return null
     registerPersistence()
-    graphCredential = buildCredential(record)
     try {
-        const result = await graphCredential.getToken(scopeUrls())
+        const result = await callCredential(record, (cred) => cred.getToken(scopeUrls()))
         if (!result?.token) return null
         return {
             token: result.token,
@@ -136,9 +155,8 @@ export async function getGraphDelegatedToken() {
     let record = await loadAuthRecord()
 
     if (record) {
-        graphCredential = buildCredential(record)
         try {
-            const result = await graphCredential.getToken(scopes)
+            const result = await callCredential(record, (cred) => cred.getToken(scopes))
             if (result?.token) {
                 return {
                     token: result.token,
@@ -152,10 +170,14 @@ export async function getGraphDelegatedToken() {
         }
     }
 
-    graphCredential = buildCredential()
-    record = await graphCredential.authenticate(scopes)
-    await saveAuthRecord(record)
-    const result = await graphCredential.getToken(scopes)
+    const authed = await callCredential(null, async (cred) => {
+        const rec = await cred.authenticate(scopes)
+        await saveAuthRecord(rec)
+        const result = await cred.getToken(scopes)
+        return { rec, result }
+    })
+    record = authed.rec
+    const result = authed.result
     if (!result?.token) throw new Error('Graph token acquisition failed')
     return {
         token: result.token,

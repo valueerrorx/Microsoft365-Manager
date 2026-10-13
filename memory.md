@@ -1,4 +1,5 @@
 @memV1
+TECH^auth^electronToken^USE_ELECTRON_GRAPH_TOKEN all platforms; pwsh env MS365_GRAPH_ACCESS_TOKEN; Linux disk cache off when libsecret/keyring fails (token stays in Electron process)
 RULE^upn^order^givenFirst|surnameFirst in upnOrderStore+localStorage ms365.upnOrder; default givenFirst; PS -UpnOrder
 PATH^upn^helpers^src/utils/upn.js buildUpn(+order); create scripts/update-user-passwords.ps1
 PATH^roles^whitelist^config/managed-directory-roles.json drives RolesView
