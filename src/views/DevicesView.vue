@@ -108,7 +108,7 @@
         <button type="button" class="btn btn-outline-primary btn-sm" :disabled="!selectedIntuneDeviceRows.length" @click="openBulkRetireModal">
           <i class="bi bi-link-45deg me-1"></i>Abkoppeln (Retire)
         </button>
-        <button type="button" class="btn btn-outline-primary btn-sm" @click="openAddToGroupModal">
+        <button type="button" class="btn btn-outline-primary btn-sm" @click="openAddToGroupModal()">
           <i class="bi bi-people me-1"></i>Zu Gruppe hinzufügen
         </button>
         <button
@@ -268,6 +268,14 @@
                     @click="openLapsModal(d)"
                   >
                     <i class="bi bi-shield-lock"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-action"
+                    title="Zu Gruppe(n) hinzufügen"
+                    @click="openAddToGroupModal([d.id])"
+                  >
+                    <i class="bi bi-people"></i>
                   </button>
                   <button
                     type="button"
@@ -607,13 +615,13 @@
           <div class="modal-header">
             <h5 class="modal-title">
               <i class="bi bi-people me-2" style="color:#58a6ff;"></i>
-              Geräte zur Gruppe hinzufügen
+              {{ groupPickerModal.deviceIds.length === 1 ? 'Gerät' : 'Geräte' }} zu Gruppe(n) hinzufügen
             </h5>
             <button type="button" class="btn-close" :disabled="groupPickerModal.running" @click="closeGroupPickerModal"></button>
           </div>
           <div class="modal-body">
             <p class="small mb-2" style="color:#8b949e;">
-              <strong style="color:#e6edf3;">{{ groupPickerModal.deviceCount }}</strong> Geräte werden der gewählten Gruppe zugeordnet.
+              <strong style="color:#e6edf3;">{{ groupPickerModal.deviceIds.length }}</strong> {{ groupPickerModal.deviceIds.length === 1 ? 'Gerät wird' : 'Geräte werden' }} den gewählten Gruppen zugeordnet.
               Nur <strong>Sicherheitsgruppen</strong> (keine Microsoft-365-Gruppen, keine dynamischen Gruppen).
               Bereits vorhandene Mitglieder werden übersprungen.
             </p>
@@ -639,11 +647,11 @@
                 v-for="g in filteredDirectoryGroups"
                 :key="g.id"
                 class="d-flex align-items-start gap-2 py-2 px-2 group-picker-row"
-                :class="{ 'group-picker-row-active': groupPickerModal.selectedGroupId === g.id }"
+                :class="{ 'group-picker-row-active': groupPickerModal.selectedGroupIds.includes(g.id) }"
               >
                 <input
-                  v-model="groupPickerModal.selectedGroupId"
-                  type="radio"
+                  v-model="groupPickerModal.selectedGroupIds"
+                  type="checkbox"
                   class="form-check-input mt-1"
                   :value="g.id"
                   :disabled="groupPickerModal.running"
@@ -657,7 +665,7 @@
             </div>
           </div>
           <div class="modal-footer flex-wrap gap-2">
-            <span v-if="groupPickerModal.selectedGroupId" class="me-auto small" style="color:#8b949e;">
+            <span v-if="selectedDeviceGroups.length" class="me-auto small" style="color:#8b949e;">
               Gewählt: <strong style="color:#e6edf3;">{{ selectedGroupDisplayName }}</strong>
             </span>
             <button type="button" class="btn btn-secondary btn-sm" @click="groupPickerModal.running ? cancelRunningPs() : closeGroupPickerModal()">{{ groupPickerModal.running ? 'Stoppen' : 'Abbrechen' }}</button>
@@ -1379,7 +1387,7 @@ async function runWipe() {
 }
 
 // --- Zu Gruppe hinzufügen (Geräte) ---
-const groupPickerModal = reactive({ show: false, running: false, selectedGroupId: '', deviceCount: 0 })
+const groupPickerModal = reactive({ show: false, running: false, selectedGroupIds: [], deviceIds: [] })
 const groupSearchQuery = ref('')
 
 const filteredDirectoryGroups = computed(() => {
@@ -1393,15 +1401,13 @@ const filteredDirectoryGroups = computed(() => {
   )
 })
 
-const selectedDeviceGroup = computed(() => {
-  const id = groupPickerModal.selectedGroupId
-  if (!id) return null
-  return assignableGroups.value.find((x) => x.id === id) || null
-})
+const selectedDeviceGroups = computed(() =>
+  assignableGroups.value.filter((x) => groupPickerModal.selectedGroupIds.includes(x.id))
+)
 
-const selectedGroupDisplayName = computed(() => selectedDeviceGroup.value?.displayName || groupPickerModal.selectedGroupId || '')
+const selectedGroupDisplayName = computed(() => selectedDeviceGroups.value.map((g) => g.displayName || g.id).join(', '))
 
-const canAddDevicesToSelectedGroup = computed(() => !!selectedDeviceGroup.value)
+const canAddDevicesToSelectedGroup = computed(() => selectedDeviceGroups.value.length > 0)
 
 function groupKindLabel(g) {
   const types = g.groupTypes || []
@@ -1410,10 +1416,12 @@ function groupKindLabel(g) {
   return 'Gruppe'
 }
 
-async function openAddToGroupModal() {
-  if (selectedDeviceIds.value.length < 2) return
-  groupPickerModal.deviceCount = selectedDeviceIds.value.length
-  groupPickerModal.selectedGroupId = ''
+// Opens group picker for given device IDs (single row) or current selection (bulk).
+async function openAddToGroupModal(deviceIds) {
+  const ids = (deviceIds || selectedDeviceIds.value).filter(Boolean).map((id) => String(id))
+  if (!ids.length) return
+  groupPickerModal.deviceIds = ids
+  groupPickerModal.selectedGroupIds = []
   groupSearchQuery.value = ''
   groupPickerModal.running = false
   groupPickerModal.show = true
@@ -1435,24 +1443,27 @@ async function runAddDevicesToGroup() {
     authStore.showToast('Nur Sicherheitsgruppen erlauben Geräte als Mitglieder.', 'error')
     return
   }
-  // selectedDeviceIds enthält bereits die Entra-Geräte-Objekt-IDs (d.id)
-  const ids = [...selectedDeviceIds.value].filter(Boolean).map((id) => String(id))
+  // deviceIds enthält die Entra-Geräte-Objekt-IDs (d.id)
+  const ids = groupPickerModal.deviceIds
   if (!ids.length) return
   groupPickerModal.running = true
-  const g = selectedDeviceGroup.value
-  const { ok } = await devicesStore.addDevicesToGroup({
-    groupId: g.id,
-    deviceIds: ids,
-    groupTypes: [...(g.groupTypes || [])],
-    securityEnabled: g.securityEnabled === true
-  })
+  let allOk = true
+  for (const g of [...selectedDeviceGroups.value]) {
+    const { ok } = await devicesStore.addDevicesToGroup({
+      groupId: g.id,
+      deviceIds: ids,
+      groupTypes: [...(g.groupTypes || [])],
+      securityEnabled: g.securityEnabled === true
+    })
+    if (ok) groupMembersCache.delete(g.id)
+    else allOk = false
+  }
   groupPickerModal.running = false
-  if (ok) {
-    groupMembersCache.delete(g.id)
-    if (isColVisible('deviceGroups')) loadDeviceGroupColumnData()
-    if (filterGroups.value.includes(g.id)) refreshGroupFilterIds()
+  if (isColVisible('deviceGroups')) loadDeviceGroupColumnData()
+  if (filterGroups.value.length) refreshGroupFilterIds()
+  if (allOk) {
     groupPickerModal.show = false
-    clearDeviceSelection()
+    if (ids.length > 1) clearDeviceSelection()
   }
 }
 
